@@ -1,17 +1,20 @@
 package gameObjects;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Tile {
 
     private ArrayList<Integer> tileCoordinates = new ArrayList<>();
     private ResourceType tileResource;
     private int rollValue;
+    private ArrayList<ArrayList<Integer>> correspondingNodeCoordinates;
 
-    public Tile(ArrayList<Integer> tileCoordinates, ResourceType tileResource, int rollValue) {
+    public Tile(ArrayList<Integer> tileCoordinates, ResourceType tileResource, int rollValue, ArrayList<ArrayList<Integer>> correspondingNodeCoordinates) {
         this.tileCoordinates = tileCoordinates;
         this.tileResource = tileResource;
         this.rollValue = rollValue;
+        this.correspondingNodeCoordinates = correspondingNodeCoordinates;
     }
 
     public ArrayList<Integer> getTileCoordinates() {
@@ -36,5 +39,13 @@ public class Tile {
 
     public void setRollValue(int rollValue) {
         this.rollValue = rollValue;
+    }
+
+    public ArrayList<ArrayList<Integer>> getCorrespondingNodeCoordinates() {
+        return correspondingNodeCoordinates;
+    }
+
+    public void setCorrespondingNodeCoordinates(ArrayList<ArrayList<Integer>> correspondingNodeCoordinates) {
+        this.correspondingNodeCoordinates = correspondingNodeCoordinates;
     }
 }
