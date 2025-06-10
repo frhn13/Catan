@@ -11,4 +11,14 @@ public static void main(String[] args) {
         }
     }
     System.out.println();
+
+    for (ArrayList<Integer> node : GameBoard.getNodesDict().keySet()) {
+        System.out.println("Node:");
+        System.out.println("[" + GameBoard.getNodesDict().get(node).getNodeCoordinates().getFirst() + ", " + GameBoard.getNodesDict().get(node).getNodeCoordinates().getLast() + "]");
+        System.out.println("Tiles:");
+        for (Tile tile: GameBoard.getNodesDict().get(node).getConnectedTiles()) {
+            System.out.println(tile.getTileCoordinates());
+        }
+        System.out.println();
+    }
 }
