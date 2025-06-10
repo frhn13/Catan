@@ -96,7 +96,6 @@ public class GameBoard {
             }
         }
 
-        ArrayList<Integer> correspondingYTiles;
         for (int y=0; y<=11; y++) {
             int x_length = switch (y) {
                 case 0, 11 -> 3;
@@ -106,56 +105,82 @@ public class GameBoard {
                 default -> 0;
             };
 
-//            correspondingYTiles = switch (y) {
-//                case 0, 1 -> new ArrayList<>(List.of(0));
-//                case 2, 3 -> new ArrayList<>(Arrays.asList(0, 1));
-//                case 4, 5 -> new ArrayList<>(Arrays.asList(1, 2));
-//                case 6, 7 -> new ArrayList<>(Arrays.asList(2, 3));
-//                case 8, 9 -> new ArrayList<>(Arrays.asList(3, 4));
-//                case 10, 11 -> new ArrayList<>(List.of(4));
-//                default -> new ArrayList<>();
-//            };
+            for (int x = 0; x < x_length; x++) {
+                ArrayList<Tile> connectedTiles = new ArrayList<>();
 
-        for (int x=0; x<x_length; x++) {
-            ArrayList<Tile> connectedTiles = new ArrayList<>();
-            for (ArrayList<Integer> tile : tilesDict.keySet()) {
-                if (tilesDict.get(tile).getCorrespondingNodeCoordinates().contains(Arrays.asList(x, y))) {
-                    connectedTiles.add(tilesDict.get(Arrays.asList(tile.getFirst(), tile.getLast())));
+                for (ArrayList<Integer> tile : tilesDict.keySet()) {
+                    if (tilesDict.get(tile).getCorrespondingNodeCoordinates().contains(Arrays.asList(x, y)))
+                        connectedTiles.add(tilesDict.get(Arrays.asList(tile.getFirst(), tile.getLast())));
+
+                    nodesDict.put(new ArrayList<>(Arrays.asList(x, y)), new Node(new ArrayList<Integer>(Arrays.asList(x, y)), new ArrayList<Node>(), connectedTiles));
                 }
-                nodesDict.put(new ArrayList<>(Arrays.asList(x, y)), new Node(new ArrayList<Integer>(Arrays.asList(x, y)), new ArrayList<Node>(), connectedTiles));
-            }
-//            switch (y) {
-//                case 0, 11:
-//                    connectedTiles = new ArrayList<>();
-//                    if (tilesDict.containsKey(Arrays.asList(x, correspondingYTiles.getFirst()))) {
-//                        connectedTiles.add(tilesDict.get(Arrays.asList(x, correspondingYTiles.getFirst())));
-//                        nodesDict.put(new ArrayList<>(Arrays.asList(x, y)), new Node(new ArrayList<Integer>(Arrays.asList(x, y)), new ArrayList<Node>(), connectedTiles));
-//                    }
-//                    break;
-//                case 1, 10:
-//                    connectedTiles = new ArrayList<>();
-//                    if (tilesDict.containsKey(Arrays.asList(x, correspondingYTiles.getFirst())))
-//                        connectedTiles.add(tilesDict.get(Arrays.asList(x, correspondingYTiles.getFirst())));
-//                    if (tilesDict.containsKey(Arrays.asList(x - 1, correspondingYTiles.getFirst())))
-//                        connectedTiles.add(tilesDict.get(Arrays.asList(x - 1, correspondingYTiles.getFirst())));
-//
-//                    nodesDict.put(new ArrayList<>(Arrays.asList(x, y)), new Node(new ArrayList<Integer>(Arrays.asList(x, y)), new ArrayList<Node>(), connectedTiles));
-//                    break;
-//                default:
-//                    connectedTiles = new ArrayList<>();
-//                    for (int j = 0; j < 2; j++) {
-//                        if (tilesDict.containsKey(Arrays.asList(x, correspondingYTiles.get(j))))
-//                            connectedTiles.add(tilesDict.get(Arrays.asList(x, correspondingYTiles.get(j))));
-//                        if (tilesDict.containsKey(Arrays.asList(x - 1, correspondingYTiles.get(j))))
-//                            connectedTiles.add(tilesDict.get(Arrays.asList(x - 1, correspondingYTiles.get(j))));
-//                    }
-//                    nodesDict.put(new ArrayList<>(Arrays.asList(x, y)), new Node(new ArrayList<Integer>(Arrays.asList(x, y)), new ArrayList<Node>(), connectedTiles));
-//                    break;
-//            }
-            // Node node = new Node(new ArrayList<Integer>(Arrays.asList(x, y)), new ArrayList<Node>(), new ArrayList<Tile>());
             }
         }
+        for (int y=0; y<=11; y++) {
+            int x_length = switch (y) {
+                case 0, 11 -> 3;
+                case 1, 2, 9, 10 -> 4;
+                case 3, 4, 7, 8 -> 5;
+                case 5, 6 -> 6;
+                default -> 0;
+            };
 
+            for (int x = 0; x < x_length; x++) {
+                ArrayList<Node> connectedNodes;
+                switch (y) {
+                    case 0:
+                        connectedNodes = new ArrayList<>();
+                        connectedNodes.add(nodesDict.get(Arrays.asList(x, y+1)));
+                        if (nodesDict.containsKey(Arrays.asList(x+1, y+1)))
+                            connectedNodes.add(nodesDict.get(Arrays.asList(x+1, y+1)));
+                        nodesDict.get(Arrays.asList(x, y)).setConnectedNodes(connectedNodes);
+                        break;
+                    case 1, 3, 5:
+                        connectedNodes = new ArrayList<>();
+                        connectedNodes.add(nodesDict.get(Arrays.asList(x, y+1)));
+                        if (nodesDict.containsKey(Arrays.asList(x, y-1)))
+                            connectedNodes.add(nodesDict.get(Arrays.asList(x, y-1)));
+                        if (nodesDict.containsKey(Arrays.asList(x-1, y-1)))
+                            connectedNodes.add(nodesDict.get(Arrays.asList(x-1, y-1)));
+                        nodesDict.get(Arrays.asList(x, y)).setConnectedNodes(connectedNodes);
+                        break;
+                    case 7, 9:
+                        connectedNodes = new ArrayList<>();
+                        connectedNodes.add(nodesDict.get(Arrays.asList(x, y+1)));
+                        if (nodesDict.containsKey(Arrays.asList(x, y-1)))
+                            connectedNodes.add(nodesDict.get(Arrays.asList(x, y-1)));
+                        if (nodesDict.containsKey(Arrays.asList(x+1, y-1)))
+                            connectedNodes.add(nodesDict.get(Arrays.asList(x+1, y-1)));
+                        nodesDict.get(Arrays.asList(x, y)).setConnectedNodes(connectedNodes);
+                        break;
+                    case 2, 4:
+                        connectedNodes = new ArrayList<>();
+                        connectedNodes.add(nodesDict.get(Arrays.asList(x, y-1)));
+                        if (nodesDict.containsKey(Arrays.asList(x, y+1)))
+                            connectedNodes.add(nodesDict.get(Arrays.asList(x, y+1)));
+                        if (nodesDict.containsKey(Arrays.asList(x+1, y+1)))
+                            connectedNodes.add(nodesDict.get(Arrays.asList(x+1, y+1)));
+                        nodesDict.get(Arrays.asList(x, y)).setConnectedNodes(connectedNodes);
+                        break;
+                    case 6, 8, 10:
+                        connectedNodes = new ArrayList<>();
+                        connectedNodes.add(nodesDict.get(Arrays.asList(x, y-1)));
+                        if (nodesDict.containsKey(Arrays.asList(x, y+1)))
+                            connectedNodes.add(nodesDict.get(Arrays.asList(x, y+1)));
+                        if (nodesDict.containsKey(Arrays.asList(x-1, y+1)))
+                            connectedNodes.add(nodesDict.get(Arrays.asList(x-1, y+1)));
+                        nodesDict.get(Arrays.asList(x, y)).setConnectedNodes(connectedNodes);
+                        break;
+                    default:
+                        connectedNodes = new ArrayList<>();
+                        connectedNodes.add(nodesDict.get(Arrays.asList(x, y-1)));
+                        if (nodesDict.containsKey(Arrays.asList(x+1, y-1)))
+                            connectedNodes.add(nodesDict.get(Arrays.asList(x+1, y-1)));
+                        nodesDict.get(Arrays.asList(x, y)).setConnectedNodes(connectedNodes);
+                        break;
+                }
+            }
+        }
     }
 
     public static GameBoard getGameBoard() {
