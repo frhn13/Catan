@@ -1,6 +1,7 @@
 import gameObjects.GameBoard;
 import gameObjects.Node;
 import gameObjects.Tile;
+import gameVisualisation.MainGame;
 
 import java.util.ArrayList;
 
@@ -32,4 +33,6 @@ public static void main(String[] args) {
         }
         System.out.println();
     }
+
+    new MainGame();
 }

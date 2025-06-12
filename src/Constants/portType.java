@@ -1,4 +1,4 @@
-package gameObjects;
+package Constants;
 
 public enum portType {
     ALL,
@@ -7,4 +7,5 @@ public enum portType {
     BRICK,
     WOOL,
     ORE,
+    NONE
 }

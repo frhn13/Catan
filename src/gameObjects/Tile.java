@@ -1,7 +1,8 @@
 package gameObjects;
 
+import Constants.ResourceType;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Tile {
 

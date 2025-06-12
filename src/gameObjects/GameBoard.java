@@ -1,5 +1,7 @@
 package gameObjects;
 
+import Constants.ResourceType;
+
 import java.util.*;
 
 public class GameBoard {
