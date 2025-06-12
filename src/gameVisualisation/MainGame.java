@@ -34,11 +34,11 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     };
                     try {
                         Image tileImg = new ImageIcon(getClass().getResource("/Images/" + tilesDict.get(tile).getTileResource().image)).getImage();
-                        g.drawImage(tileImg, tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x, tilesDict.get(tile).getTileCoordinates().getLast() * 200 + 50, TILE_WIDTH, TILE_HEIGHT, null);
+                        g.drawImage(tileImg, tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x, tilesDict.get(tile).getTileCoordinates().getLast() * 150 + 50, TILE_WIDTH, TILE_HEIGHT, null);
                         //g.fillRect(tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x, tilesDict.get(tile).getTileCoordinates().getLast() * 200 + 50, 100, 100);
                         g.setFont(new Font("Arial", Font.BOLD, 50));
                         g.setColor(Color.white);
-                        g.drawString(String.valueOf(tilesDict.get(tile).getRollValue()), tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x + 80, tilesDict.get(tile).getTileCoordinates().getLast() * 200 + 150);
+                        g.drawString(String.valueOf(tilesDict.get(tile).getRollValue()), tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x + 80, tilesDict.get(tile).getTileCoordinates().getLast() * 150 + 150);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -52,9 +52,22 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                         case 3, 4, 7, 8 -> 200;
                         default -> 100;
                     };
-                    int y_pos = nodesDict.get(node).getNodeCoordinates().getLast() * (1000/12) + 50;
+                    int y_pos = switch (nodesDict.get(node).getNodeCoordinates().getLast()) {
+                        case 0 -> 50;
+                        case 1 -> 100;
+                        case 2 -> 200;
+                        case 3 -> 250;
+                        case 4 -> 350;
+                        case 5 -> 400;
+                        case 6 -> 500;
+                        case 7 -> 550;
+                        case 8 -> 650;
+                        case 9 -> 700;
+                        case 10 -> 800;
+                        default -> 850;
+                    };
                     g.setColor(Color.BLACK);
-                    g.fillOval(nodesDict.get(node).getNodeCoordinates().getFirst() * 200 + base_x, y_pos, 20, 20);
+                    g.fillOval(nodesDict.get(node).getNodeCoordinates().getFirst() * 200 + base_x - 10, y_pos - 10, 20, 20);
                 }
 
             }
