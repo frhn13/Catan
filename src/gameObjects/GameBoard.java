@@ -1,5 +1,6 @@
 package gameObjects;
 
+import Constants.PlayerColour;
 import Constants.ResourceType;
 
 import java.util.*;
@@ -9,10 +10,23 @@ public class GameBoard {
     private static GameBoard gameBoard = new GameBoard();
     private static HashMap<ArrayList<Integer>, Tile> tilesDict;
     private static HashMap<ArrayList<Integer>, Node> nodesDict;
+    private static HashMap<ArrayList<Integer>, Town> townsDict;
+    private static HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict;
+    private static ArrayList<Player> allPlayers;
+    private static PlayerColour currentPlayerTurn;
 
     public GameBoard() {
         nodesDict = new HashMap<>();
         tilesDict = new HashMap<>();
+        townsDict = new HashMap<>();
+        roadsDict = new HashMap<>();
+        allPlayers = new ArrayList<>() {};
+        currentPlayerTurn = PlayerColour.RED;
+
+        allPlayers.add(new Player(PlayerColour.RED));
+        allPlayers.add(new Player(PlayerColour.BLUE));
+        allPlayers.add(new Player(PlayerColour.GREEN));
+        allPlayers.add(new Player(PlayerColour.ORANGE));
 
         ResourceType[] resourceTypes = new ResourceType[] {ResourceType.LUMBER,
                 ResourceType.GRAIN, ResourceType.WOOL, ResourceType.BRICK, ResourceType.ORE, ResourceType.DESERT};
@@ -207,5 +221,21 @@ public class GameBoard {
 
     public static void setNodesDict(HashMap<ArrayList<Integer>, Node> nodesDict) {
         GameBoard.nodesDict = nodesDict;
+    }
+
+    public static HashMap<ArrayList<Integer>, Town> getTownsDict() {
+        return townsDict;
+    }
+
+    public static void setTownsDict(HashMap<ArrayList<Integer>, Town> townsDict) {
+        GameBoard.townsDict = townsDict;
+    }
+
+    public static HashMap<ArrayList<ArrayList<Integer>>, Road> getRoadsDict() {
+        return roadsDict;
+    }
+
+    public static void setRoadsDict(HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict) {
+        GameBoard.roadsDict = roadsDict;
     }
 }

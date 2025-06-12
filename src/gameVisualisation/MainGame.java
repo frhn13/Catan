@@ -16,9 +16,12 @@ import java.util.HashMap;
 import static Constants.Constants.*;
 
 public class MainGame extends JFrame implements ActionListener, MouseListener {
+    JButton rollDiceButton;
+    JButton buildRoadButton;
+    JButton buildSettlementButton;
+    JButton upgradeSettlementButton;
 
     public MainGame() {
-
         JPanel gamePanel = new JPanel() {
             @Override
             public void paintComponent(Graphics g) {
@@ -73,6 +76,63 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
         };
 
+        rollDiceButton = new JButton("Roll Dice") {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(100, DEFAULT_GAME_HEIGHT - 200, 200, 50);
+            }
+        };
+
+        buildRoadButton = new JButton("Build Road") {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(350, DEFAULT_GAME_HEIGHT - 200, 200, 50);
+            }
+        };
+
+        buildSettlementButton = new JButton("Build Settlement") {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(600, DEFAULT_GAME_HEIGHT - 200, 200, 50);
+            }
+        };
+
+        upgradeSettlementButton = new JButton("Upgrade to City") {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(850, DEFAULT_GAME_HEIGHT - 200, 200, 50);
+            }
+        };
+
+        rollDiceButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("A");
+            }
+        });
+
+        buildRoadButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("B");
+            }
+        });
+
+        buildSettlementButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("C");
+            }
+        });
+
+        upgradeSettlementButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("D");
+            }
+        });
+
+        gamePanel.add(rollDiceButton);
+        gamePanel.add(buildRoadButton);
+        gamePanel.add(buildSettlementButton);
+        gamePanel.add(upgradeSettlementButton);
+
         this.setSize(DEFAULT_GAME_WIDTH, DEFAULT_GAME_HEIGHT);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLocationRelativeTo(null);
@@ -81,6 +141,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         //this.pack();
         this.add(gamePanel);
         this.setVisible(true);
+        //System.out.println(rollDiceButton.isEnabled());
     }
 
     @Override
