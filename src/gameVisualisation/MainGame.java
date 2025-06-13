@@ -1,18 +1,13 @@
 package gameVisualisation;
 
 import Constants.ResourceType;
-import gameObjects.GameBoard;
-import gameObjects.Node;
-import gameObjects.Player;
-import gameObjects.Tile;
+import gameObjects.*;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -20,6 +15,7 @@ import static Constants.Constants.*;
 
 
 public class MainGame extends JFrame implements ActionListener, MouseListener {
+    JPanel gamePanel;
     JButton rollDiceButton;
     JButton buildRoadButton;
     JButton buildSettlementButton;
@@ -27,21 +23,20 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     JLabel diceRollLabel;
 
     int diceValue;
+    boolean buildingNewSettlement = false;
 
     ArrayList<Player> players = GameBoard.getAllPlayers();
     HashMap<ArrayList<Integer>, Tile> tilesDict = GameBoard.getTilesDict();
+    HashMap<ArrayList<Integer>, Node> nodesDict = GameBoard.getNodesDict();
+    HashMap<ArrayList<Integer>, Town> townsDict = GameBoard.getTownsDict();
 
     public MainGame() {
-        JPanel gamePanel = new JPanel() {
+        gamePanel = new JPanel() {
             @Override
             public void paintComponent(Graphics g) {
                 super.paintComponent(g);
 
-                Player currentPlayer = null;
-                for (Player player : players) {
-                    if (player.getPlayerNumber() == GameBoard.getCurrentPlayerTurn())
-                        currentPlayer = player;
-                }
+                Player currentPlayer = findCurrentPlayer();
                 System.out.println(currentPlayer.getPlayerNumber());
                 int card_num = 0;
                 for (ResourceType resource : currentPlayer.getPlayerResourcesDict().keySet()) {
@@ -75,7 +70,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     }
                 }
 
-                HashMap<ArrayList<Integer>, Node> nodesDict = GameBoard.getNodesDict();
                 for (ArrayList<Integer> node : nodesDict.keySet()) {
                     base_x = switch (nodesDict.get(node).getNodeCoordinates().getLast()) {
                         case 0, 11 -> 400;
@@ -99,10 +93,77 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     };
                     g.setColor(Color.BLACK);
                     g.fillOval(nodesDict.get(node).getNodeCoordinates().getFirst() * 200 + base_x - 10, y_pos - 10, 20, 20);
+                    nodesDict.get(node).setNodeBoardCoordinates(new ArrayList<>(Arrays.asList(nodesDict.get(node).getNodeCoordinates().getFirst() * 200 + base_x - 10, y_pos - 10)));
+//                    System.out.println(nodesDict.get(node).getNodeCoordinates().getFirst() + "," +
+//                            nodesDict.get(node).getNodeCoordinates().getLast() + "; " +
+//                            nodesDict.get(node).getNodeBoardCoordinates().getFirst() + ", " +
+//                            nodesDict.get(node).getNodeBoardCoordinates().getLast());
                 }
 
+                for (ArrayList<Integer> town : townsDict.keySet()) {
+                    base_x = switch (townsDict.get(town).getTownCoordinates().getLast()) {
+                        case 0, 11 -> 400;
+                        case 1, 2, 9, 10 -> 300;
+                        case 3, 4, 7, 8 -> 200;
+                        default -> 100;
+                    };
+                    int y_pos = switch (townsDict.get(town).getTownCoordinates().getLast()) {
+                        case 0 -> 50;
+                        case 1 -> 100;
+                        case 2 -> 200;
+                        case 3 -> 250;
+                        case 4 -> 350;
+                        case 5 -> 400;
+                        case 6 -> 500;
+                        case 7 -> 550;
+                        case 8 -> 650;
+                        case 9 -> 700;
+                        case 10 -> 800;
+                        default -> 850;
+                    };
+                    g.setColor(currentPlayer.getPlayerColour().colour);
+                    g.fillOval(townsDict.get(town).getTownCoordinates().getFirst() * 200 + base_x - 10, y_pos - 10, 20, 20);
+                }
             }
         };
+
+        gamePanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int mouseX = e.getX();
+                int mouseY = e.getY();
+                if (buildingNewSettlement) {
+                    System.out.println(mouseX);
+                    System.out.println(mouseY);
+                    for (ArrayList<Integer> node : nodesDict.keySet()) {
+                        if (mouseX >= nodesDict.get(node).getNodeBoardCoordinates().getFirst() &&
+                                mouseX <= nodesDict.get(node).getNodeBoardCoordinates().getFirst() + 20 &&
+                                mouseY >= nodesDict.get(node).getNodeBoardCoordinates().getLast() &&
+                                mouseY <= nodesDict.get(node).getNodeBoardCoordinates().getLast() + 20 &&
+                                !nodesDict.get(node).isHasSettlement()) {
+                            System.out.println(nodesDict.get(node).getNodeCoordinates());
+
+                            Player currentPlayer = findCurrentPlayer();
+                            Town newTown = new Town(nodesDict.get(node).getNodeCoordinates(), nodesDict.get(node).getConnectedNodes(), nodesDict.get(node).getConnectedTiles(), currentPlayer.getPlayerColour());
+                            currentPlayer.updatePlayerTownsDict(newTown);
+                            GameBoard.updatePlayerTownsDict(newTown);
+                            currentPlayer.setScore(currentPlayer.getScore() + 1);
+
+                            HashMap<ResourceType, Integer> removedResources = new HashMap<>();
+                            removedResources.put(ResourceType.LUMBER, -1);
+                            removedResources.put(ResourceType.BRICK, -1);
+                            removedResources.put(ResourceType.GRAIN, -1);
+                            removedResources.put(ResourceType.WOOL, -1);
+
+                            currentPlayer.updatePlayerResourcesDict(removedResources);
+                            buildingNewSettlement = false;
+                            nodesDict.get(node).setHasSettlement(true);
+                            gamePanel.repaint();
+                        }
+                    }
+                }
+            }
+        });
 
         rollDiceButton = new JButton("Roll Dice") {
             public void setBounds(int x, int y, int width, int height) {
@@ -146,17 +207,18 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 diceRollLabel.setVisible(true);
                 diceRollLabel.setText(String.valueOf(diceValue));
 
-                Player currentPlayer = null;
-                for (Player player : players) {
-                    if (player.getPlayerNumber() == GameBoard.getCurrentPlayerTurn())
-                        currentPlayer = player;
-                }
+                Player currentPlayer = findCurrentPlayer();
 
+                HashMap<ResourceType, Integer> newResources = new HashMap<>();
                 for (Tile tile : tilesDict.values()) {
                     if (tile.getRollValue() == diceValue) {
-                        currentPlayer.updatePlayerResourcesDict(tile.getTileResource(), 1);
+                        if (newResources.containsKey(tile.getTileResource()))
+                            newResources.put(tile.getTileResource(), newResources.get(tile.getTileResource()) + 1);
+                        else
+                            newResources.put(tile.getTileResource(), 1);
                     }
                 }
+                currentPlayer.updatePlayerResourcesDict(newResources);
                 gamePanel.repaint();
             }
         });
@@ -171,7 +233,14 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         buildSettlementButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("C");
+                Player currentPlayer = findCurrentPlayer();
+                if (currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER) >= 1 &&
+                        currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK) >= 1 &&
+                        currentPlayer.getPlayerResourcesDict().get(ResourceType.GRAIN) >= 1 &&
+                        currentPlayer.getPlayerResourcesDict().get(ResourceType.WOOL) >= 1) {
+                    buildingNewSettlement = !buildingNewSettlement;
+                }
+                System.out.println(buildingNewSettlement);
             }
         });
 
@@ -196,7 +265,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         //this.pack();
         this.add(gamePanel);
         this.setVisible(true);
-        //System.out.println(rollDiceButton.isEnabled());
     }
 
     @Override
@@ -227,5 +295,13 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     @Override
     public void mouseExited(MouseEvent e) {
 
+    }
+
+    public Player findCurrentPlayer() {
+        for (Player player : players) {
+            if (player.getPlayerNumber() == GameBoard.getCurrentPlayerTurn())
+                return player;
+        }
+        return players.getFirst();
     }
 }

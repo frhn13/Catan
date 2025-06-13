@@ -6,12 +6,14 @@ public class Node {
     private ArrayList<Integer> nodeCoordinates;
     private ArrayList<Node> connectedNodes;
     private ArrayList<Tile> connectedTiles;
+    private ArrayList<Integer> nodeBoardCoordinates;
     private boolean hasSettlement;
 
     public Node(ArrayList<Integer> nodeCoordinates, ArrayList<Node> connectedNodes, ArrayList<Tile> connectedTiles) {
         this.nodeCoordinates = nodeCoordinates;
         this.connectedNodes = connectedNodes;
         this.connectedTiles = connectedTiles;
+        this.nodeBoardCoordinates = new ArrayList<>();
         this.hasSettlement = false;
     }
 
@@ -37,6 +39,14 @@ public class Node {
 
     public void setConnectedTiles(ArrayList<Tile> connectedTiles) {
         this.connectedTiles = connectedTiles;
+    }
+
+    public ArrayList<Integer> getNodeBoardCoordinates() {
+        return nodeBoardCoordinates;
+    }
+
+    public void setNodeBoardCoordinates(ArrayList<Integer> nodeBoardCoordinates) {
+        this.nodeBoardCoordinates = nodeBoardCoordinates;
     }
 
     public boolean isHasSettlement() {

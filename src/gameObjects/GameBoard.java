@@ -231,6 +231,10 @@ public class GameBoard {
         GameBoard.townsDict = townsDict;
     }
 
+    public static void updatePlayerTownsDict(Town town) {
+        townsDict.put(town.getTownCoordinates(), town);
+    }
+
     public static HashMap<ArrayList<ArrayList<Integer>>, Road> getRoadsDict() {
         return roadsDict;
     }

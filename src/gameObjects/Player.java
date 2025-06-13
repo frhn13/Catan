@@ -61,6 +61,10 @@ public class Player {
         this.playerTownsDict = playerTownsDict;
     }
 
+    public void updatePlayerTownsDict(Town town) {
+        this.playerTownsDict.put(town.getTownCoordinates(), town);
+    }
+
     public HashMap<ArrayList<ArrayList<Integer>>, Road> getPlayerRoadsDict() {
         return playerRoadsDict;
     }
@@ -77,7 +81,16 @@ public class Player {
         this.playerResourcesDict = playerResourcesDict;
     }
 
-    public void updatePlayerResourcesDict(ResourceType resource, int amount) {
-        this.playerResourcesDict.put(resource, this.playerResourcesDict.get(resource) + amount);
+//    public void updatePlayerResourcesDict(ResourceType resource, int amount) {
+//        this.playerResourcesDict.put(resource, this.playerResourcesDict.get(resource) + amount);
+//    }
+
+    public void updatePlayerResourcesDict(HashMap<ResourceType, Integer> newResources) {
+        for (ResourceType newResourceType : newResources.keySet()) {
+            for (ResourceType currentResourceType : this.playerResourcesDict.keySet()) {
+                if (newResourceType == currentResourceType)
+                    this.playerResourcesDict.put(currentResourceType, this.playerResourcesDict.get(currentResourceType) + newResources.get(newResourceType));
+            }
+        }
     }
 }
