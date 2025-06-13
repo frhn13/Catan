@@ -13,20 +13,20 @@ public class GameBoard {
     private static HashMap<ArrayList<Integer>, Town> townsDict;
     private static HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict;
     private static ArrayList<Player> allPlayers;
-    private static PlayerColour currentPlayerTurn;
+    private static int currentPlayerTurn;
 
     public GameBoard() {
         nodesDict = new HashMap<>();
         tilesDict = new HashMap<>();
         townsDict = new HashMap<>();
         roadsDict = new HashMap<>();
-        allPlayers = new ArrayList<>() {};
-        currentPlayerTurn = PlayerColour.RED;
+        allPlayers = new ArrayList<>();
+        currentPlayerTurn = 1;
 
-        allPlayers.add(new Player(PlayerColour.RED));
-        allPlayers.add(new Player(PlayerColour.BLUE));
-        allPlayers.add(new Player(PlayerColour.GREEN));
-        allPlayers.add(new Player(PlayerColour.ORANGE));
+        allPlayers.add(new Player(PlayerColour.RED, 1));
+        allPlayers.add(new Player(PlayerColour.BLUE, 2));
+        allPlayers.add(new Player(PlayerColour.GREEN, 3));
+        allPlayers.add(new Player(PlayerColour.ORANGE, 4));
 
         ResourceType[] resourceTypes = new ResourceType[] {ResourceType.LUMBER,
                 ResourceType.GRAIN, ResourceType.WOOL, ResourceType.BRICK, ResourceType.ORE, ResourceType.DESERT};
@@ -237,5 +237,21 @@ public class GameBoard {
 
     public static void setRoadsDict(HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict) {
         GameBoard.roadsDict = roadsDict;
+    }
+
+    public static ArrayList<Player> getAllPlayers() {
+        return allPlayers;
+    }
+
+    public static void setAllPlayers(ArrayList<Player> allPlayers) {
+        GameBoard.allPlayers = allPlayers;
+    }
+
+    public static int getCurrentPlayerTurn() {
+        return currentPlayerTurn;
+    }
+
+    public static void setCurrentPlayerTurn(int currentPlayerTurn) {
+        GameBoard.currentPlayerTurn = currentPlayerTurn;
     }
 }

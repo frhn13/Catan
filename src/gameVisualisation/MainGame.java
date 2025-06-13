@@ -1,7 +1,9 @@
 package gameVisualisation;
 
+import Constants.ResourceType;
 import gameObjects.GameBoard;
 import gameObjects.Node;
+import gameObjects.Player;
 import gameObjects.Tile;
 
 import javax.swing.*;
@@ -12,20 +14,46 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 
 import static Constants.Constants.*;
+
 
 public class MainGame extends JFrame implements ActionListener, MouseListener {
     JButton rollDiceButton;
     JButton buildRoadButton;
     JButton buildSettlementButton;
     JButton upgradeSettlementButton;
+    JLabel diceRollLabel;
+
+    int diceValue;
+
+    ArrayList<Player> players = GameBoard.getAllPlayers();
+    HashMap<ArrayList<Integer>, Tile> tilesDict = GameBoard.getTilesDict();
 
     public MainGame() {
         JPanel gamePanel = new JPanel() {
             @Override
             public void paintComponent(Graphics g) {
                 super.paintComponent(g);
+
+                Player currentPlayer = null;
+                for (Player player : players) {
+                    if (player.getPlayerNumber() == GameBoard.getCurrentPlayerTurn())
+                        currentPlayer = player;
+                }
+                System.out.println(currentPlayer.getPlayerNumber());
+                int card_num = 0;
+                for (ResourceType resource : currentPlayer.getPlayerResourcesDict().keySet()) {
+                    if (currentPlayer.getPlayerResourcesDict().get(resource) > 0) {
+                        for (int i=0; i<currentPlayer.getPlayerResourcesDict().get(resource); i++) {
+                            Image cardImg = new ImageIcon(getClass().getResource("/Images/gameCards/" + resource.cardImage)).getImage();
+                            g.drawImage(cardImg, card_num * 100 + 50, DEFAULT_GAME_HEIGHT - 130, CARD_WIDTH, CARD_HEIGHT, null);
+                            card_num++;
+                        }
+                    }
+                }
+
                 HashMap<ArrayList<Integer>, Tile> tilesDict = GameBoard.getTilesDict();
                 int base_x;
                 for (ArrayList<Integer> tile : tilesDict.keySet()) {
@@ -36,7 +64,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                         default -> 100;
                     };
                     try {
-                        Image tileImg = new ImageIcon(getClass().getResource("/Images/" + tilesDict.get(tile).getTileResource().image)).getImage();
+                        Image tileImg = new ImageIcon(getClass().getResource("/Images/gameTiles/" + tilesDict.get(tile).getTileResource().tileImage)).getImage();
                         g.drawImage(tileImg, tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x, tilesDict.get(tile).getTileCoordinates().getLast() * 150 + 50, TILE_WIDTH, TILE_HEIGHT, null);
                         //g.fillRect(tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x, tilesDict.get(tile).getTileCoordinates().getLast() * 200 + 50, 100, 100);
                         g.setFont(new Font("Arial", Font.BOLD, 50));
@@ -100,10 +128,36 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
         };
 
+        diceRollLabel = new JLabel() {
+          public void setBounds(int x, int y, int width, int height) {
+              super.setBounds(DEFAULT_GAME_WIDTH / 2, DEFAULT_GAME_HEIGHT - 300, 100, 100);
+          }
+        };
+        diceRollLabel.setVisible(false);
+        diceRollLabel.setFont(DICE_ROLL_FONT);
+
         rollDiceButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("A");
+                Random random = new Random();
+                int diceRoll1 = random.nextInt(6) + 1;
+                int diceRoll2 = random.nextInt(6) + 1;
+                int diceValue = diceRoll1 + diceRoll2;
+                diceRollLabel.setVisible(true);
+                diceRollLabel.setText(String.valueOf(diceValue));
+
+                Player currentPlayer = null;
+                for (Player player : players) {
+                    if (player.getPlayerNumber() == GameBoard.getCurrentPlayerTurn())
+                        currentPlayer = player;
+                }
+
+                for (Tile tile : tilesDict.values()) {
+                    if (tile.getRollValue() == diceValue) {
+                        currentPlayer.updatePlayerResourcesDict(tile.getTileResource(), 1);
+                    }
+                }
+                gamePanel.repaint();
             }
         });
 
@@ -132,6 +186,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         gamePanel.add(buildRoadButton);
         gamePanel.add(buildSettlementButton);
         gamePanel.add(upgradeSettlementButton);
+        gamePanel.add(diceRollLabel);
 
         this.setSize(DEFAULT_GAME_WIDTH, DEFAULT_GAME_HEIGHT);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
