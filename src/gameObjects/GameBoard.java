@@ -243,7 +243,7 @@ public class GameBoard {
         GameBoard.roadsDict = roadsDict;
     }
 
-    public static void updatePlayerRoadsDict(Road newRoad) {
+    public static void updateRoadsDict(Road newRoad) {
         roadsDict.put(newRoad.getRoadNodeCoordinates(), newRoad);
     }
 

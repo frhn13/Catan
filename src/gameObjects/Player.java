@@ -73,7 +73,7 @@ public class Player {
         this.playerRoadsDict = playerRoadsDict;
     }
 
-    public void updatePlayerRoadDict(Road newRoad) {
+    public void updatePlayerRoadsDict(Road newRoad) {
         this.playerRoadsDict.put(newRoad.getRoadNodeCoordinates(), newRoad);
     }
 

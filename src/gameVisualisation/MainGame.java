@@ -197,6 +197,50 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 if (buildingNewRoad) {
                     System.out.println(mouseX);
                     System.out.println(mouseY);
+
+                    outerLoop:
+                    for (ArrayList<ArrayList<Integer>> road : roadsDict.keySet()) {
+                        for (ArrayList<Integer> node : road) {
+                            for (Node neighbourNode : nodesDict.get(node).getConnectedNodes()) {
+                                ArrayList<Integer> startNodeCoordinates = nodesDict.get(node).getNodeBoardCoordinates();
+                                ArrayList<Integer> endNodeCoordinates = neighbourNode.getNodeBoardCoordinates();
+
+                                if (((startNodeCoordinates.getFirst() < endNodeCoordinates.getFirst() &&
+                                        mouseX <= endNodeCoordinates.getFirst() && mouseX >= startNodeCoordinates.getFirst())
+                                        || (startNodeCoordinates.getFirst() > endNodeCoordinates.getFirst() &&
+                                        mouseX >= endNodeCoordinates.getFirst() && mouseX <= startNodeCoordinates.getFirst())
+                                        || (Objects.equals(startNodeCoordinates.getFirst(), endNodeCoordinates.getFirst()) &&
+                                        mouseX >= startNodeCoordinates.getFirst() && mouseX <= startNodeCoordinates.getFirst() + 20)) &&
+                                        ((startNodeCoordinates.getLast() <= endNodeCoordinates.getLast() &&
+                                                mouseY <= endNodeCoordinates.getLast() && mouseY >= startNodeCoordinates.getLast())
+                                                || (startNodeCoordinates.getLast() > endNodeCoordinates.getLast() &&
+                                                mouseY >= endNodeCoordinates.getLast() && mouseY <= startNodeCoordinates.getLast())) &&
+                                        !GameBoard.getRoadsDict().containsKey(new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(nodesDict.get(node).getNodeCoordinates().getFirst(), nodesDict.get(node).getNodeCoordinates().getLast())),
+                                                new ArrayList<>(Arrays.asList(neighbourNode.getNodeCoordinates().getFirst(), neighbourNode.getNodeCoordinates().getLast())))))) {
+
+                                    Player currentPlayer = findCurrentPlayer();
+                                    Road newRoad = new Road(new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(nodesDict.get(node).getNodeCoordinates().getFirst(), nodesDict.get(node).getNodeCoordinates().getLast())),
+                                            new ArrayList<>(Arrays.asList(neighbourNode.getNodeCoordinates().getFirst(), neighbourNode.getNodeCoordinates().getLast())))),
+                                            new ArrayList<>(Arrays.asList(nodesDict.get(node), neighbourNode)),
+                                            currentPlayer.getPlayerColour(),
+                                            new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(startNodeCoordinates.getFirst(), startNodeCoordinates.getLast())),
+                                            new ArrayList<>(Arrays.asList(endNodeCoordinates.getFirst(), endNodeCoordinates.getLast())))));
+                                    currentPlayer.updatePlayerRoadsDict(newRoad);
+                                    GameBoard.updateRoadsDict(newRoad);
+
+                                    HashMap<ResourceType, Integer> removedResources = new HashMap<>();
+                                    removedResources.put(ResourceType.LUMBER, -1);
+                                    removedResources.put(ResourceType.BRICK, -1);
+
+                                    currentPlayer.updatePlayerResourcesDict(removedResources);
+                                    buildingNewRoad = false;
+                                    break outerLoop;
+                                }
+                            }
+                        }
+                    }
+
+                    outerLoop:
                     for (ArrayList<Integer> town : townsDict.keySet()) {
                         for (Node neighbourNode : townsDict.get(town).getConnectedNodes()) {
                             ArrayList<Integer> townCoordinates = townsDict.get(town).getTownBoardCoordinates();
@@ -211,7 +255,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                             ((townCoordinates.getLast() <= nodeCoordinates.getLast() &&
                                     mouseY <= nodeCoordinates.getLast() && mouseY >= townCoordinates.getLast())
                             || (townCoordinates.getLast() > nodeCoordinates.getLast() &&
-                                    mouseY >= nodeCoordinates.getLast() && mouseY <= townCoordinates.getLast()))) {
+                                    mouseY >= nodeCoordinates.getLast() && mouseY <= townCoordinates.getLast())) &&
+                            !GameBoard.getRoadsDict().containsKey(new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(townsDict.get(town).getTownCoordinates().getFirst(), townsDict.get(town).getTownCoordinates().getLast())),
+                                    new ArrayList<>(Arrays.asList(neighbourNode.getNodeCoordinates().getFirst(), neighbourNode.getNodeCoordinates().getLast())))))) {
+
                                 Player currentPlayer = findCurrentPlayer();
                                 Road newRoad = new Road(new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(townsDict.get(town).getTownCoordinates().getFirst(), townsDict.get(town).getTownCoordinates().getLast())),
                                             new ArrayList<>(Arrays.asList(neighbourNode.getNodeCoordinates().getFirst(), neighbourNode.getNodeCoordinates().getLast())))),
@@ -219,8 +266,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         currentPlayer.getPlayerColour(),
                                         new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(townCoordinates.getFirst(), townCoordinates.getLast())),
                                             new ArrayList<>(Arrays.asList(nodeCoordinates.getFirst(), nodeCoordinates.getLast())))));
-                                currentPlayer.updatePlayerRoadDict(newRoad);
-                                GameBoard.updatePlayerRoadsDict(newRoad);
+                                currentPlayer.updatePlayerRoadsDict(newRoad);
+                                GameBoard.updateRoadsDict(newRoad);
 
                                 HashMap<ResourceType, Integer> removedResources = new HashMap<>();
                                 removedResources.put(ResourceType.LUMBER, -1);
@@ -228,12 +275,15 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
                                 currentPlayer.updatePlayerResourcesDict(removedResources);
                                 buildingNewRoad = false;
-                                break;
+                                break outerLoop;
                             }
                         }
                     }
                 }
                 gamePanel.repaint();
+                Player currentPlayer = findCurrentPlayer();
+                System.out.println("BRICK: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK));
+                System.out.println("LUMBER: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER));
             }
         });
 
@@ -272,6 +322,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         rollDiceButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                buildingNewSettlement = false;
+                upgradingToCity = false;
+                buildingNewRoad = false;
                 Random random = new Random();
                 int diceRoll1 = random.nextInt(6) + 1;
                 int diceRoll2 = random.nextInt(6) + 1;
