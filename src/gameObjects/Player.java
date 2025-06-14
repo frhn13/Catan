@@ -13,6 +13,7 @@ public class Player {
     private HashMap<ArrayList<Integer>, Town> playerTownsDict;
     private HashMap<ArrayList<ArrayList<Integer>>, Road> playerRoadsDict;
     private HashMap<ResourceType, Integer> playerResourcesDict;
+    private int initialPlacements;
 
     public Player(PlayerColour playerColour, int playerNumber) {
         this.playerColour = playerColour;
@@ -21,6 +22,7 @@ public class Player {
         this.playerTownsDict = new HashMap<>();
         this.playerRoadsDict = new HashMap<>();
         this.playerResourcesDict = new HashMap<>();
+        this.initialPlacements = 0;
 
         this.playerResourcesDict.put(ResourceType.WOOL, 0);
         this.playerResourcesDict.put(ResourceType.GRAIN, 0);
@@ -96,5 +98,13 @@ public class Player {
                     this.playerResourcesDict.put(currentResourceType, this.playerResourcesDict.get(currentResourceType) + newResources.get(newResourceType));
             }
         }
+    }
+
+    public int getInitialPlacements() {
+        return initialPlacements;
+    }
+
+    public void setInitialPlacements(int initialPlacements) {
+        this.initialPlacements = initialPlacements;
     }
 }

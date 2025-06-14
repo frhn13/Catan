@@ -1,5 +1,6 @@
 package gameVisualisation;
 
+import Constants.GameState;
 import Constants.ResourceType;
 import gameObjects.*;
 
@@ -29,6 +30,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     HashMap<ArrayList<Integer>, Node> nodesDict = GameBoard.getNodesDict();
     HashMap<ArrayList<Integer>, Town> townsDict = GameBoard.getTownsDict();
     HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict = GameBoard.getRoadsDict();
+
+    GameState gameState = GameState.INITIAL_PLACEMENT;
 
     public MainGame() {
         gamePanel = new JPanel() {
@@ -129,46 +132,89 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 if (buildingNewSettlement) {
                     System.out.println(mouseX);
                     System.out.println(mouseY);
-                    for (ArrayList<Integer> node : nodesDict.keySet()) {
-                        if (mouseX >= nodesDict.get(node).getNodeBoardCoordinates().getFirst() &&
-                                mouseX <= nodesDict.get(node).getNodeBoardCoordinates().getFirst() + 20 &&
-                                mouseY >= nodesDict.get(node).getNodeBoardCoordinates().getLast() &&
-                                mouseY <= nodesDict.get(node).getNodeBoardCoordinates().getLast() + 20 &&
-                                !nodesDict.get(node).isHasSettlement()) {
 
-                            for (Node neighbourNode : nodesDict.get(node).getConnectedNodes()) {
-                                if (neighbourNode.isHasSettlement()) {
-                                    neighbouring_settlement = true;
+                    if (gameState == GameState.INITIAL_PLACEMENT) {
+                        for (ArrayList<Integer> node : nodesDict.keySet()) {
+                            if (mouseX >= nodesDict.get(node).getNodeBoardCoordinates().getFirst() &&
+                                    mouseX <= nodesDict.get(node).getNodeBoardCoordinates().getFirst() + 20 &&
+                                    mouseY >= nodesDict.get(node).getNodeBoardCoordinates().getLast() &&
+                                    mouseY <= nodesDict.get(node).getNodeBoardCoordinates().getLast() + 20 &&
+                                    !nodesDict.get(node).isHasSettlement()) {
+
+                                for (Node neighbourNode : nodesDict.get(node).getConnectedNodes()) {
+                                    if (neighbourNode.isHasSettlement()) {
+                                        neighbouring_settlement = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!neighbouring_settlement) {
+                                    System.out.println(nodesDict.get(node).getNodeCoordinates());
+
+                                    Player currentPlayer = findCurrentPlayer();
+                                    Town newTown = new Town(nodesDict.get(node).getNodeCoordinates(), nodesDict.get(node).getConnectedNodes(),
+                                            nodesDict.get(node).getConnectedTiles(), currentPlayer.getPlayerColour(), nodesDict.get(node).getNodeBoardCoordinates());
+                                    currentPlayer.updatePlayerTownsDict(newTown);
+                                    GameBoard.updatePlayerTownsDict(newTown);
+                                    currentPlayer.setScore(currentPlayer.getScore() + 1);
+
+                                    currentPlayer.setInitialPlacements(currentPlayer.getInitialPlacements() + 1);
+                                    buildingNewSettlement = false;
+                                    nodesDict.get(node).setHasSettlement(true);
+
+                                    buildSettlementButton.setVisible(false);
+                                    buildRoadButton.setVisible(true);
                                     break;
                                 }
                             }
+                        }
+                    }
+                    else if (gameState == GameState.NORMAL_PLAY) {
+                        Player currentPlayer = findCurrentPlayer();
+                        outerLoop:
+                        for (ArrayList<Integer> node : nodesDict.keySet()) {
+                            if (mouseX >= nodesDict.get(node).getNodeBoardCoordinates().getFirst() &&
+                                    mouseX <= nodesDict.get(node).getNodeBoardCoordinates().getFirst() + 20 &&
+                                    mouseY >= nodesDict.get(node).getNodeBoardCoordinates().getLast() &&
+                                    mouseY <= nodesDict.get(node).getNodeBoardCoordinates().getLast() + 20 &&
+                                    !nodesDict.get(node).isHasSettlement()) {
+                                for (Node neighbourNode : nodesDict.get(node).getConnectedNodes()) {
+                                    if (neighbourNode.isHasSettlement()) {
+                                        neighbouring_settlement = true;
+                                        break;
+                                    }
+                                }
+                                if (!neighbouring_settlement) {
+                                    for (ArrayList<ArrayList<Integer>> roads : currentPlayer.getPlayerRoadsDict().keySet()) {
+                                        for (ArrayList<Integer> roadNode : roads) {
+                                            if (roadNode.equals(node)) {
+                                                Town newTown = new Town(nodesDict.get(node).getNodeCoordinates(), nodesDict.get(node).getConnectedNodes(),
+                                                        nodesDict.get(node).getConnectedTiles(), currentPlayer.getPlayerColour(), nodesDict.get(node).getNodeBoardCoordinates());
+                                                currentPlayer.updatePlayerTownsDict(newTown);
+                                                GameBoard.updatePlayerTownsDict(newTown);
+                                                currentPlayer.setScore(currentPlayer.getScore() + 1);
 
-                            if (!neighbouring_settlement) {
-                                System.out.println(nodesDict.get(node).getNodeCoordinates());
+                                                HashMap<ResourceType, Integer> removedResources = new HashMap<>();
+                                                removedResources.put(ResourceType.LUMBER, -1);
+                                                removedResources.put(ResourceType.BRICK, -1);
+                                                removedResources.put(ResourceType.GRAIN, -1);
+                                                removedResources.put(ResourceType.WOOL, -1);
 
-                                Player currentPlayer = findCurrentPlayer();
-                                Town newTown = new Town(nodesDict.get(node).getNodeCoordinates(), nodesDict.get(node).getConnectedNodes(),
-                                        nodesDict.get(node).getConnectedTiles(), currentPlayer.getPlayerColour(), nodesDict.get(node).getNodeBoardCoordinates());
-                                currentPlayer.updatePlayerTownsDict(newTown);
-                                GameBoard.updatePlayerTownsDict(newTown);
-                                currentPlayer.setScore(currentPlayer.getScore() + 1);
-
-                                HashMap<ResourceType, Integer> removedResources = new HashMap<>();
-                                removedResources.put(ResourceType.LUMBER, -1);
-                                removedResources.put(ResourceType.BRICK, -1);
-                                removedResources.put(ResourceType.GRAIN, -1);
-                                removedResources.put(ResourceType.WOOL, -1);
-
-                                currentPlayer.updatePlayerResourcesDict(removedResources);
-                                buildingNewSettlement = false;
-                                nodesDict.get(node).setHasSettlement(true);
-                                break;
+                                                currentPlayer.updatePlayerResourcesDict(removedResources);
+                                                currentPlayer.setInitialPlacements(currentPlayer.getInitialPlacements() + 1);
+                                                buildingNewSettlement = false;
+                                                nodesDict.get(node).setHasSettlement(true);
+                                                break outerLoop;
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
-                if (upgradingToCity) {
+                if (upgradingToCity && gameState == GameState.NORMAL_PLAY) {
                     System.out.println(mouseX);
                     System.out.println(mouseY);
                     for (ArrayList<Integer> town : townsDict.keySet()) {
@@ -197,53 +243,56 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 if (buildingNewRoad) {
                     System.out.println(mouseX);
                     System.out.println(mouseY);
+                    Player currentPlayer = findCurrentPlayer();
 
-                    outerLoop:
-                    for (ArrayList<ArrayList<Integer>> road : roadsDict.keySet()) {
-                        for (ArrayList<Integer> node : road) {
-                            for (Node neighbourNode : nodesDict.get(node).getConnectedNodes()) {
-                                ArrayList<Integer> startNodeCoordinates = nodesDict.get(node).getNodeBoardCoordinates();
-                                ArrayList<Integer> endNodeCoordinates = neighbourNode.getNodeBoardCoordinates();
+                    if (gameState == GameState.NORMAL_PLAY) {
+                        outerLoop:
+                        for (ArrayList<ArrayList<Integer>> road : currentPlayer.getPlayerRoadsDict().keySet()) {
+                            for (ArrayList<Integer> node : road) {
+                                for (Node neighbourNode : nodesDict.get(node).getConnectedNodes()) {
+                                    ArrayList<Integer> startNodeCoordinates = nodesDict.get(node).getNodeBoardCoordinates();
+                                    ArrayList<Integer> endNodeCoordinates = neighbourNode.getNodeBoardCoordinates();
 
-                                if (((startNodeCoordinates.getFirst() < endNodeCoordinates.getFirst() &&
-                                        mouseX <= endNodeCoordinates.getFirst() && mouseX >= startNodeCoordinates.getFirst())
-                                        || (startNodeCoordinates.getFirst() > endNodeCoordinates.getFirst() &&
-                                        mouseX >= endNodeCoordinates.getFirst() && mouseX <= startNodeCoordinates.getFirst())
-                                        || (Objects.equals(startNodeCoordinates.getFirst(), endNodeCoordinates.getFirst()) &&
-                                        mouseX >= startNodeCoordinates.getFirst() && mouseX <= startNodeCoordinates.getFirst() + 20)) &&
-                                        ((startNodeCoordinates.getLast() <= endNodeCoordinates.getLast() &&
-                                                mouseY <= endNodeCoordinates.getLast() && mouseY >= startNodeCoordinates.getLast())
-                                                || (startNodeCoordinates.getLast() > endNodeCoordinates.getLast() &&
-                                                mouseY >= endNodeCoordinates.getLast() && mouseY <= startNodeCoordinates.getLast())) &&
-                                        !GameBoard.getRoadsDict().containsKey(new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(nodesDict.get(node).getNodeCoordinates().getFirst(), nodesDict.get(node).getNodeCoordinates().getLast())),
-                                                new ArrayList<>(Arrays.asList(neighbourNode.getNodeCoordinates().getFirst(), neighbourNode.getNodeCoordinates().getLast())))))) {
+                                    if (((startNodeCoordinates.getFirst() < endNodeCoordinates.getFirst() &&
+                                            mouseX <= endNodeCoordinates.getFirst() && mouseX >= startNodeCoordinates.getFirst())
+                                            || (startNodeCoordinates.getFirst() > endNodeCoordinates.getFirst() &&
+                                            mouseX >= endNodeCoordinates.getFirst() && mouseX <= startNodeCoordinates.getFirst())
+                                            || (Objects.equals(startNodeCoordinates.getFirst(), endNodeCoordinates.getFirst()) &&
+                                            mouseX >= startNodeCoordinates.getFirst() && mouseX <= startNodeCoordinates.getFirst() + 20)) &&
+                                            ((startNodeCoordinates.getLast() <= endNodeCoordinates.getLast() &&
+                                                    mouseY <= endNodeCoordinates.getLast() && mouseY >= startNodeCoordinates.getLast())
+                                                    || (startNodeCoordinates.getLast() > endNodeCoordinates.getLast() &&
+                                                    mouseY >= endNodeCoordinates.getLast() && mouseY <= startNodeCoordinates.getLast())) &&
+                                            !GameBoard.getRoadsDict().containsKey(new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(nodesDict.get(node).getNodeCoordinates().getFirst(), nodesDict.get(node).getNodeCoordinates().getLast())),
+                                                    new ArrayList<>(Arrays.asList(neighbourNode.getNodeCoordinates().getFirst(), neighbourNode.getNodeCoordinates().getLast())))))) {
 
-                                    Player currentPlayer = findCurrentPlayer();
-                                    Road newRoad = new Road(new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(nodesDict.get(node).getNodeCoordinates().getFirst(), nodesDict.get(node).getNodeCoordinates().getLast())),
-                                            new ArrayList<>(Arrays.asList(neighbourNode.getNodeCoordinates().getFirst(), neighbourNode.getNodeCoordinates().getLast())))),
-                                            new ArrayList<>(Arrays.asList(nodesDict.get(node), neighbourNode)),
-                                            currentPlayer.getPlayerColour(),
-                                            new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(startNodeCoordinates.getFirst(), startNodeCoordinates.getLast())),
-                                            new ArrayList<>(Arrays.asList(endNodeCoordinates.getFirst(), endNodeCoordinates.getLast())))));
-                                    currentPlayer.updatePlayerRoadsDict(newRoad);
-                                    GameBoard.updateRoadsDict(newRoad);
+                                        currentPlayer = findCurrentPlayer();
+                                        Road newRoad = new Road(new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(nodesDict.get(node).getNodeCoordinates().getFirst(), nodesDict.get(node).getNodeCoordinates().getLast())),
+                                                new ArrayList<>(Arrays.asList(neighbourNode.getNodeCoordinates().getFirst(), neighbourNode.getNodeCoordinates().getLast())))),
+                                                new ArrayList<>(Arrays.asList(nodesDict.get(node), neighbourNode)),
+                                                currentPlayer.getPlayerColour(),
+                                                new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(startNodeCoordinates.getFirst(), startNodeCoordinates.getLast())),
+                                                        new ArrayList<>(Arrays.asList(endNodeCoordinates.getFirst(), endNodeCoordinates.getLast())))));
+                                        currentPlayer.updatePlayerRoadsDict(newRoad);
+                                        GameBoard.updateRoadsDict(newRoad);
 
-                                    HashMap<ResourceType, Integer> removedResources = new HashMap<>();
-                                    removedResources.put(ResourceType.LUMBER, -1);
-                                    removedResources.put(ResourceType.BRICK, -1);
+                                        HashMap<ResourceType, Integer> removedResources = new HashMap<>();
+                                        removedResources.put(ResourceType.LUMBER, -1);
+                                        removedResources.put(ResourceType.BRICK, -1);
 
-                                    currentPlayer.updatePlayerResourcesDict(removedResources);
-                                    buildingNewRoad = false;
-                                    break outerLoop;
+                                        currentPlayer.updatePlayerResourcesDict(removedResources);
+                                        buildingNewRoad = false;
+                                        break outerLoop;
+                                    }
                                 }
                             }
                         }
                     }
 
                     outerLoop:
-                    for (ArrayList<Integer> town : townsDict.keySet()) {
-                        for (Node neighbourNode : townsDict.get(town).getConnectedNodes()) {
-                            ArrayList<Integer> townCoordinates = townsDict.get(town).getTownBoardCoordinates();
+                    for (ArrayList<Integer> town : currentPlayer.getPlayerTownsDict().keySet()) {
+                        for (Node neighbourNode : currentPlayer.getPlayerTownsDict().get(town).getConnectedNodes()) {
+                            ArrayList<Integer> townCoordinates = currentPlayer.getPlayerTownsDict().get(town).getTownBoardCoordinates();
                             ArrayList<Integer> nodeCoordinates = neighbourNode.getNodeBoardCoordinates();
 
                             if (((townCoordinates.getFirst() < nodeCoordinates.getFirst() &&
@@ -259,7 +308,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                             !GameBoard.getRoadsDict().containsKey(new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(townsDict.get(town).getTownCoordinates().getFirst(), townsDict.get(town).getTownCoordinates().getLast())),
                                     new ArrayList<>(Arrays.asList(neighbourNode.getNodeCoordinates().getFirst(), neighbourNode.getNodeCoordinates().getLast())))))) {
 
-                                Player currentPlayer = findCurrentPlayer();
+                                currentPlayer = findCurrentPlayer();
                                 Road newRoad = new Road(new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(townsDict.get(town).getTownCoordinates().getFirst(), townsDict.get(town).getTownCoordinates().getLast())),
                                             new ArrayList<>(Arrays.asList(neighbourNode.getNodeCoordinates().getFirst(), neighbourNode.getNodeCoordinates().getLast())))),
                                         new ArrayList<>(Arrays.asList(nodesDict.get(town), neighbourNode)),
@@ -269,14 +318,27 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                 currentPlayer.updatePlayerRoadsDict(newRoad);
                                 GameBoard.updateRoadsDict(newRoad);
 
-                                HashMap<ResourceType, Integer> removedResources = new HashMap<>();
-                                removedResources.put(ResourceType.LUMBER, -1);
-                                removedResources.put(ResourceType.BRICK, -1);
+                                if (gameState == GameState.NORMAL_PLAY) {
+                                    HashMap<ResourceType, Integer> removedResources = new HashMap<>();
+                                    removedResources.put(ResourceType.LUMBER, -1);
+                                    removedResources.put(ResourceType.BRICK, -1);
+                                    currentPlayer.updatePlayerResourcesDict(removedResources);
+                                }
 
-                                currentPlayer.updatePlayerResourcesDict(removedResources);
                                 buildingNewRoad = false;
                                 break outerLoop;
                             }
+                        }
+                    }
+
+                    if (gameState == GameState.INITIAL_PLACEMENT) {
+                        buildRoadButton.setVisible(false);
+                        buildSettlementButton.setVisible(true);
+                        if (currentPlayer.getInitialPlacements() >= 2) {
+                            gameState = GameState.NORMAL_PLAY;
+                            buildRoadButton.setVisible(true);
+                            rollDiceButton.setVisible(true);
+                            upgradeSettlementButton.setVisible(true);
                         }
                     }
                 }
@@ -284,6 +346,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 Player currentPlayer = findCurrentPlayer();
                 System.out.println("BRICK: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK));
                 System.out.println("LUMBER: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER));
+                System.out.println("GRAIN: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.GRAIN));
+                System.out.println("WOOL: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.WOOL));
+                System.out.println("ORE: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.ORE));
+                System.out.println(gameState);
             }
         });
 
@@ -316,8 +382,14 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
               super.setBounds(DEFAULT_GAME_WIDTH / 2, DEFAULT_GAME_HEIGHT - 300, 100, 100);
           }
         };
-        diceRollLabel.setVisible(false);
-        diceRollLabel.setFont(DICE_ROLL_FONT);
+
+        if (gameState == GameState.INITIAL_PLACEMENT) {
+            buildRoadButton.setVisible(false);
+            rollDiceButton.setVisible(false);
+            upgradeSettlementButton.setVisible(false);
+            diceRollLabel.setVisible(false);
+            diceRollLabel.setFont(DICE_ROLL_FONT);
+        }
 
         rollDiceButton.addActionListener(new ActionListener() {
             @Override
@@ -333,14 +405,21 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 diceRollLabel.setText(String.valueOf(diceValue));
 
                 Player currentPlayer = findCurrentPlayer();
+                HashMap<ArrayList<Integer>, Town> playerTownsDict = currentPlayer.getPlayerTownsDict();
+                // Town town = playerTownsDict.get(Arrays.asList(1, 2));
 
                 HashMap<ResourceType, Integer> newResources = new HashMap<>();
                 for (Tile tile : tilesDict.values()) {
-                    if (tile.getRollValue() == diceValue) {
-                        if (newResources.containsKey(tile.getTileResource()))
-                            newResources.put(tile.getTileResource(), newResources.get(tile.getTileResource()) + 1);
-                        else
-                            newResources.put(tile.getTileResource(), 1);
+                    for (ArrayList<Integer> tileNode : tile.getCorrespondingNodeCoordinates()) {
+                        for (ArrayList<Integer> town : playerTownsDict.keySet()) {
+                            if (playerTownsDict.get(town).getTownCoordinates().equals(tileNode) &&
+                                    tile.getRollValue() == diceValue) {
+                                if (newResources.containsKey(tile.getTileResource()))
+                                    newResources.put(tile.getTileResource(), newResources.get(tile.getTileResource()) + 1);
+                                else
+                                    newResources.put(tile.getTileResource(), 1);
+                            }
+                        }
                     }
                 }
                 currentPlayer.updatePlayerResourcesDict(newResources);
@@ -354,8 +433,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 buildingNewSettlement = false;
                 upgradingToCity = false;
                 Player currentPlayer = findCurrentPlayer();
-                if (currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER) >= 1 &&
-                currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK) >= 1) {
+                if ((currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER) >= 1 &&
+                currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK) >= 1) || gameState == GameState.INITIAL_PLACEMENT) {
                     buildingNewRoad = !buildingNewRoad;
                 }
                 System.out.println(buildingNewRoad);
@@ -368,10 +447,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 upgradingToCity = false;
                 buildingNewRoad = false;
                 Player currentPlayer = findCurrentPlayer();
-                if (currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER) >= 1 &&
+                if ((currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER) >= 1 &&
                         currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK) >= 1 &&
                         currentPlayer.getPlayerResourcesDict().get(ResourceType.GRAIN) >= 1 &&
-                        currentPlayer.getPlayerResourcesDict().get(ResourceType.WOOL) >= 1) {
+                        currentPlayer.getPlayerResourcesDict().get(ResourceType.WOOL) >= 1) || gameState == GameState.INITIAL_PLACEMENT) {
                     buildingNewSettlement = !buildingNewSettlement;
                 }
                 System.out.println(buildingNewSettlement);
