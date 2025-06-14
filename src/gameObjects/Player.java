@@ -61,8 +61,8 @@ public class Player {
         this.playerTownsDict = playerTownsDict;
     }
 
-    public void updatePlayerTownsDict(Town town) {
-        this.playerTownsDict.put(town.getTownCoordinates(), town);
+    public void updatePlayerTownsDict(Town newTown) {
+        this.playerTownsDict.put(newTown.getTownCoordinates(), newTown);
     }
 
     public HashMap<ArrayList<ArrayList<Integer>>, Road> getPlayerRoadsDict() {
@@ -71,6 +71,10 @@ public class Player {
 
     public void setPlayerRoadsDict(HashMap<ArrayList<ArrayList<Integer>>, Road> playerRoadsDict) {
         this.playerRoadsDict = playerRoadsDict;
+    }
+
+    public void updatePlayerRoadDict(Road newRoad) {
+        this.playerRoadsDict.put(newRoad.getRoadNodeCoordinates(), newRoad);
     }
 
     public HashMap<ResourceType, Integer> getPlayerResourcesDict() {

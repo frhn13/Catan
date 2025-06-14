@@ -1,5 +1,5 @@
 ## TODO
 
-1) Setting up nodes and edges
-2) Creating client-server interface
-3) What GUI library to use
+1) Adding start where user places two settlements and roads
+2) Adding multiple players to the game
+3) Creating client-server interface

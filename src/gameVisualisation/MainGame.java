@@ -6,10 +6,7 @@ import gameObjects.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 
 import static Constants.Constants.*;
 
@@ -31,6 +28,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     HashMap<ArrayList<Integer>, Tile> tilesDict = GameBoard.getTilesDict();
     HashMap<ArrayList<Integer>, Node> nodesDict = GameBoard.getNodesDict();
     HashMap<ArrayList<Integer>, Town> townsDict = GameBoard.getTownsDict();
+    HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict = GameBoard.getRoadsDict();
 
     public MainGame() {
         gamePanel = new JPanel() {
@@ -103,31 +101,21 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 }
 
                 for (ArrayList<Integer> town : townsDict.keySet()) {
-                    base_x = switch (townsDict.get(town).getTownCoordinates().getLast()) {
-                        case 0, 11 -> 400;
-                        case 1, 2, 9, 10 -> 300;
-                        case 3, 4, 7, 8 -> 200;
-                        default -> 100;
-                    };
-                    int y_pos = switch (townsDict.get(town).getTownCoordinates().getLast()) {
-                        case 0 -> 50;
-                        case 1 -> 100;
-                        case 2 -> 200;
-                        case 3 -> 250;
-                        case 4 -> 350;
-                        case 5 -> 400;
-                        case 6 -> 500;
-                        case 7 -> 550;
-                        case 8 -> 650;
-                        case 9 -> 700;
-                        case 10 -> 800;
-                        default -> 850;
-                    };
                     g.setColor(currentPlayer.getPlayerColour().colour);
                     if (townsDict.get(town).isCity())
-                        g.fillRect(townsDict.get(town).getTownCoordinates().getFirst() * 200 + base_x - 10, y_pos - 10, 20, 20);
+                        g.fillRect(townsDict.get(town).getTownBoardCoordinates().getFirst(), townsDict.get(town).getTownBoardCoordinates().getLast(), 20, 20);
                     else
-                        g.fillOval(townsDict.get(town).getTownCoordinates().getFirst() * 200 + base_x - 10, y_pos - 10, 20, 20);
+                        g.fillOval(townsDict.get(town).getTownBoardCoordinates().getFirst(), townsDict.get(town).getTownBoardCoordinates().getLast(), 20, 20);
+                }
+
+                for (ArrayList<ArrayList<Integer>> road : roadsDict.keySet()) {
+                    g.setColor(currentPlayer.getPlayerColour().colour);
+                    Graphics2D g2 = (Graphics2D) g;
+                    g2.setStroke(new BasicStroke(2));
+                    g2.drawLine(roadsDict.get(road).getRoadNodeBoardCoordinates().getFirst().getFirst() + 10,
+                            roadsDict.get(road).getRoadNodeBoardCoordinates().getFirst().getLast(),
+                            roadsDict.get(road).getRoadNodeBoardCoordinates().getLast().getFirst() + 10,
+                            roadsDict.get(road).getRoadNodeBoardCoordinates().getLast().getLast());
                 }
             }
         };
@@ -174,12 +162,15 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                 currentPlayer.updatePlayerResourcesDict(removedResources);
                                 buildingNewSettlement = false;
                                 nodesDict.get(node).setHasSettlement(true);
+                                break;
                             }
                         }
                     }
                 }
 
                 if (upgradingToCity) {
+                    System.out.println(mouseX);
+                    System.out.println(mouseY);
                     for (ArrayList<Integer> town : townsDict.keySet()) {
                         if (mouseX >= townsDict.get(town).getTownBoardCoordinates().getFirst() &&
                                 mouseX <= townsDict.get(town).getTownBoardCoordinates().getFirst() + 20 &&
@@ -198,6 +189,47 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
                             currentPlayer.updatePlayerResourcesDict(removedResources);
                             upgradingToCity = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (buildingNewRoad) {
+                    System.out.println(mouseX);
+                    System.out.println(mouseY);
+                    for (ArrayList<Integer> town : townsDict.keySet()) {
+                        for (Node neighbourNode : townsDict.get(town).getConnectedNodes()) {
+                            ArrayList<Integer> townCoordinates = townsDict.get(town).getTownBoardCoordinates();
+                            ArrayList<Integer> nodeCoordinates = neighbourNode.getNodeBoardCoordinates();
+
+                            if (((townCoordinates.getFirst() < nodeCoordinates.getFirst() &&
+                                    mouseX <= nodeCoordinates.getFirst() && mouseX >= townCoordinates.getFirst())
+                            || (townCoordinates.getFirst() > nodeCoordinates.getFirst() &&
+                                    mouseX >= nodeCoordinates.getFirst() && mouseX <= townCoordinates.getFirst())
+                            || (Objects.equals(townCoordinates.getFirst(), nodeCoordinates.getFirst()) &&
+                                    mouseX >= townCoordinates.getFirst() && mouseX <= townCoordinates.getFirst() + 20)) &&
+                            ((townCoordinates.getLast() <= nodeCoordinates.getLast() &&
+                                    mouseY <= nodeCoordinates.getLast() && mouseY >= townCoordinates.getLast())
+                            || (townCoordinates.getLast() > nodeCoordinates.getLast() &&
+                                    mouseY >= nodeCoordinates.getLast() && mouseY <= townCoordinates.getLast()))) {
+                                Player currentPlayer = findCurrentPlayer();
+                                Road newRoad = new Road(new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(townsDict.get(town).getTownCoordinates().getFirst(), townsDict.get(town).getTownCoordinates().getLast())),
+                                            new ArrayList<>(Arrays.asList(neighbourNode.getNodeCoordinates().getFirst(), neighbourNode.getNodeCoordinates().getLast())))),
+                                        new ArrayList<>(Arrays.asList(nodesDict.get(town), neighbourNode)),
+                                        currentPlayer.getPlayerColour(),
+                                        new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(townCoordinates.getFirst(), townCoordinates.getLast())),
+                                            new ArrayList<>(Arrays.asList(nodeCoordinates.getFirst(), nodeCoordinates.getLast())))));
+                                currentPlayer.updatePlayerRoadDict(newRoad);
+                                GameBoard.updatePlayerRoadsDict(newRoad);
+
+                                HashMap<ResourceType, Integer> removedResources = new HashMap<>();
+                                removedResources.put(ResourceType.LUMBER, -1);
+                                removedResources.put(ResourceType.BRICK, -1);
+
+                                currentPlayer.updatePlayerResourcesDict(removedResources);
+                                buildingNewRoad = false;
+                                break;
+                            }
                         }
                     }
                 }
@@ -207,25 +239,25 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
         rollDiceButton = new JButton("Roll Dice") {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(100, DEFAULT_GAME_HEIGHT - 200, 200, 50);
+                super.setBounds(100, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
             }
         };
 
         buildRoadButton = new JButton("Build Road") {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(350, DEFAULT_GAME_HEIGHT - 200, 200, 50);
+                super.setBounds(350, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
             }
         };
 
         buildSettlementButton = new JButton("Build Settlement") {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(600, DEFAULT_GAME_HEIGHT - 200, 200, 50);
+                super.setBounds(600, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
             }
         };
 
         upgradeSettlementButton = new JButton("Upgrade to City") {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(850, DEFAULT_GAME_HEIGHT - 200, 200, 50);
+                super.setBounds(850, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
             }
         };
 
@@ -273,7 +305,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK) >= 1) {
                     buildingNewRoad = !buildingNewRoad;
                 }
-                System.out.println("B");
+                System.out.println(buildingNewRoad);
             }
         });
 
