@@ -9,13 +9,15 @@ public class Town {
     private ArrayList<Node> connectedNodes;
     private ArrayList<Tile> connectedTiles;
     private PlayerColour townColour;
+    private ArrayList<Integer> townBoardCoordinates;
     private boolean isCity;
 
-    public Town(ArrayList<Integer> townCoordinates, ArrayList<Node> connectedNodes, ArrayList<Tile> connectedTiles, PlayerColour townColour) {
+    public Town(ArrayList<Integer> townCoordinates, ArrayList<Node> connectedNodes, ArrayList<Tile> connectedTiles, PlayerColour townColour, ArrayList<Integer> townBoardCoordinates) {
         this.townCoordinates = townCoordinates;
         this.connectedNodes = connectedNodes;
         this.connectedTiles = connectedTiles;
         this.townColour = townColour;
+        this.townBoardCoordinates = townBoardCoordinates;
         this.isCity = false;
     }
 
@@ -49,6 +51,14 @@ public class Town {
 
     public void setTownColour(PlayerColour townColour) {
         this.townColour = townColour;
+    }
+
+    public ArrayList<Integer> getTownBoardCoordinates() {
+        return townBoardCoordinates;
+    }
+
+    public void setTownBoardCoordinates(ArrayList<Integer> townBoardCoordinates) {
+        this.townBoardCoordinates = townBoardCoordinates;
     }
 
     public boolean isCity() {

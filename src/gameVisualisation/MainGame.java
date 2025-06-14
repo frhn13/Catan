@@ -24,6 +24,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
     int diceValue;
     boolean buildingNewSettlement = false;
+    boolean upgradingToCity = false;
+    boolean buildingNewRoad = false;
 
     ArrayList<Player> players = GameBoard.getAllPlayers();
     HashMap<ArrayList<Integer>, Tile> tilesDict = GameBoard.getTilesDict();
@@ -122,7 +124,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                         default -> 850;
                     };
                     g.setColor(currentPlayer.getPlayerColour().colour);
-                    g.fillOval(townsDict.get(town).getTownCoordinates().getFirst() * 200 + base_x - 10, y_pos - 10, 20, 20);
+                    if (townsDict.get(town).isCity())
+                        g.fillRect(townsDict.get(town).getTownCoordinates().getFirst() * 200 + base_x - 10, y_pos - 10, 20, 20);
+                    else
+                        g.fillOval(townsDict.get(town).getTownCoordinates().getFirst() * 200 + base_x - 10, y_pos - 10, 20, 20);
                 }
             }
         };
@@ -132,6 +137,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             public void mouseClicked(MouseEvent e) {
                 int mouseX = e.getX();
                 int mouseY = e.getY();
+                boolean neighbouring_settlement = false;
                 if (buildingNewSettlement) {
                     System.out.println(mouseX);
                     System.out.println(mouseY);
@@ -141,27 +147,61 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                 mouseY >= nodesDict.get(node).getNodeBoardCoordinates().getLast() &&
                                 mouseY <= nodesDict.get(node).getNodeBoardCoordinates().getLast() + 20 &&
                                 !nodesDict.get(node).isHasSettlement()) {
-                            System.out.println(nodesDict.get(node).getNodeCoordinates());
 
-                            Player currentPlayer = findCurrentPlayer();
-                            Town newTown = new Town(nodesDict.get(node).getNodeCoordinates(), nodesDict.get(node).getConnectedNodes(), nodesDict.get(node).getConnectedTiles(), currentPlayer.getPlayerColour());
-                            currentPlayer.updatePlayerTownsDict(newTown);
-                            GameBoard.updatePlayerTownsDict(newTown);
-                            currentPlayer.setScore(currentPlayer.getScore() + 1);
+                            for (Node neighbourNode : nodesDict.get(node).getConnectedNodes()) {
+                                if (neighbourNode.isHasSettlement()) {
+                                    neighbouring_settlement = true;
+                                    break;
+                                }
+                            }
 
-                            HashMap<ResourceType, Integer> removedResources = new HashMap<>();
-                            removedResources.put(ResourceType.LUMBER, -1);
-                            removedResources.put(ResourceType.BRICK, -1);
-                            removedResources.put(ResourceType.GRAIN, -1);
-                            removedResources.put(ResourceType.WOOL, -1);
+                            if (!neighbouring_settlement) {
+                                System.out.println(nodesDict.get(node).getNodeCoordinates());
 
-                            currentPlayer.updatePlayerResourcesDict(removedResources);
-                            buildingNewSettlement = false;
-                            nodesDict.get(node).setHasSettlement(true);
-                            gamePanel.repaint();
+                                Player currentPlayer = findCurrentPlayer();
+                                Town newTown = new Town(nodesDict.get(node).getNodeCoordinates(), nodesDict.get(node).getConnectedNodes(),
+                                        nodesDict.get(node).getConnectedTiles(), currentPlayer.getPlayerColour(), nodesDict.get(node).getNodeBoardCoordinates());
+                                currentPlayer.updatePlayerTownsDict(newTown);
+                                GameBoard.updatePlayerTownsDict(newTown);
+                                currentPlayer.setScore(currentPlayer.getScore() + 1);
+
+                                HashMap<ResourceType, Integer> removedResources = new HashMap<>();
+                                removedResources.put(ResourceType.LUMBER, -1);
+                                removedResources.put(ResourceType.BRICK, -1);
+                                removedResources.put(ResourceType.GRAIN, -1);
+                                removedResources.put(ResourceType.WOOL, -1);
+
+                                currentPlayer.updatePlayerResourcesDict(removedResources);
+                                buildingNewSettlement = false;
+                                nodesDict.get(node).setHasSettlement(true);
+                            }
                         }
                     }
                 }
+
+                if (upgradingToCity) {
+                    for (ArrayList<Integer> town : townsDict.keySet()) {
+                        if (mouseX >= townsDict.get(town).getTownBoardCoordinates().getFirst() &&
+                                mouseX <= townsDict.get(town).getTownBoardCoordinates().getFirst() + 20 &&
+                                mouseY >= townsDict.get(town).getTownBoardCoordinates().getLast() &&
+                                mouseY <= townsDict.get(town).getTownBoardCoordinates().getLast() + 20 &&
+                                !townsDict.get(town).isCity()) {
+                            Player currentPlayer = findCurrentPlayer();
+                            System.out.println(townsDict.get(town).getTownCoordinates());
+                            townsDict.get(town).setCity(true);
+                            currentPlayer.updatePlayerTownsDict(townsDict.get(town));
+                            currentPlayer.setScore(currentPlayer.getScore() + 1);
+
+                            HashMap<ResourceType, Integer> removedResources = new HashMap<>();
+                            removedResources.put(ResourceType.GRAIN, -2);
+                            removedResources.put(ResourceType.ORE, -3);
+
+                            currentPlayer.updatePlayerResourcesDict(removedResources);
+                            upgradingToCity = false;
+                        }
+                    }
+                }
+                gamePanel.repaint();
             }
         });
 
@@ -226,6 +266,13 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         buildRoadButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                buildingNewSettlement = false;
+                upgradingToCity = false;
+                Player currentPlayer = findCurrentPlayer();
+                if (currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER) >= 1 &&
+                currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK) >= 1) {
+                    buildingNewRoad = !buildingNewRoad;
+                }
                 System.out.println("B");
             }
         });
@@ -233,6 +280,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         buildSettlementButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                upgradingToCity = false;
+                buildingNewRoad = false;
                 Player currentPlayer = findCurrentPlayer();
                 if (currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER) >= 1 &&
                         currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK) >= 1 &&
@@ -247,7 +296,14 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         upgradeSettlementButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("D");
+                buildingNewSettlement = false;
+                buildingNewRoad = false;
+                Player currentPlayer = findCurrentPlayer();
+                if (currentPlayer.getPlayerResourcesDict().get(ResourceType.GRAIN) >= 2 &&
+                currentPlayer.getPlayerResourcesDict().get(ResourceType.ORE) >= 3) {
+                    upgradingToCity = !upgradingToCity;
+                }
+                System.out.println(upgradingToCity);
             }
         });
 
