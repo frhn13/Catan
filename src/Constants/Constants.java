@@ -14,4 +14,7 @@ public class Constants {
     public static final int GAME_BUTTON_HEIGHT = 50;
 
     public static final Font DICE_ROLL_FONT = new Font("MV Boli", Font.PLAIN, 50);
+    public static final Font SCORE_FONT = new Font("MV Boli", Font.PLAIN, 30);
+
+    public static final int TOTAL_INITIAL_PLACEMENTS = 2;
 }

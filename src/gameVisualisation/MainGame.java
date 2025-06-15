@@ -18,7 +18,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     JButton buildRoadButton;
     JButton buildSettlementButton;
     JButton upgradeSettlementButton;
+    JButton endTurnButton;
     JLabel diceRollLabel;
+    JLabel currentUserScoreLabel;
 
     int diceValue;
     boolean buildingNewSettlement = false;
@@ -44,11 +46,17 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 int card_num = 0;
                 for (ResourceType resource : currentPlayer.getPlayerResourcesDict().keySet()) {
                     if (currentPlayer.getPlayerResourcesDict().get(resource) > 0) {
-                        for (int i=0; i<currentPlayer.getPlayerResourcesDict().get(resource); i++) {
-                            Image cardImg = new ImageIcon(getClass().getResource("/Images/gameCards/" + resource.cardImage)).getImage();
-                            g.drawImage(cardImg, card_num * 100 + 50, DEFAULT_GAME_HEIGHT - 130, CARD_WIDTH, CARD_HEIGHT, null);
-                            card_num++;
-                        }
+                        Image cardImg = new ImageIcon(getClass().getResource("/Images/gameCards/" + resource.cardImage)).getImage();
+                        g.drawImage(cardImg, card_num * 100 + 50, DEFAULT_GAME_HEIGHT - 130, CARD_WIDTH, CARD_HEIGHT, null);
+                        g.setFont(new Font("Arial", Font.BOLD, 30));
+                        g.setColor(Color.black);
+                        g.drawString(String.valueOf(currentPlayer.getPlayerResourcesDict().get(resource)), card_num * 100 + 70, DEFAULT_GAME_HEIGHT - 90);
+                        card_num++;
+//                        for (int i=0; i<currentPlayer.getPlayerResourcesDict().get(resource); i++) {
+//                            Image cardImg = new ImageIcon(getClass().getResource("/Images/gameCards/" + resource.cardImage)).getImage();
+//                            g.drawImage(cardImg, card_num * 100 + 50, DEFAULT_GAME_HEIGHT - 130, CARD_WIDTH, CARD_HEIGHT, null);
+//                            card_num++;
+//                        }
                     }
                 }
 
@@ -133,24 +141,22 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     System.out.println(mouseX);
                     System.out.println(mouseY);
 
-                    if (gameState == GameState.INITIAL_PLACEMENT) {
-                        for (ArrayList<Integer> node : nodesDict.keySet()) {
-                            if (mouseX >= nodesDict.get(node).getNodeBoardCoordinates().getFirst() &&
-                                    mouseX <= nodesDict.get(node).getNodeBoardCoordinates().getFirst() + 20 &&
-                                    mouseY >= nodesDict.get(node).getNodeBoardCoordinates().getLast() &&
-                                    mouseY <= nodesDict.get(node).getNodeBoardCoordinates().getLast() + 20 &&
-                                    !nodesDict.get(node).isHasSettlement()) {
+                    for (ArrayList<Integer> node : nodesDict.keySet()) {
+                        if (mouseX >= nodesDict.get(node).getNodeBoardCoordinates().getFirst() &&
+                                mouseX <= nodesDict.get(node).getNodeBoardCoordinates().getFirst() + 20 &&
+                                mouseY >= nodesDict.get(node).getNodeBoardCoordinates().getLast() &&
+                                mouseY <= nodesDict.get(node).getNodeBoardCoordinates().getLast() + 20 &&
+                                !nodesDict.get(node).isHasSettlement()) {
 
-                                for (Node neighbourNode : nodesDict.get(node).getConnectedNodes()) {
-                                    if (neighbourNode.isHasSettlement()) {
-                                        neighbouring_settlement = true;
-                                        break;
-                                    }
+                            for (Node neighbourNode : nodesDict.get(node).getConnectedNodes()) {
+                                if (neighbourNode.isHasSettlement()) {
+                                    neighbouring_settlement = true;
+                                    break;
                                 }
+                            }
 
-                                if (!neighbouring_settlement) {
-                                    System.out.println(nodesDict.get(node).getNodeCoordinates());
-
+                            if (!neighbouring_settlement) {
+                                if (gameState == GameState.INITIAL_PLACEMENT) {
                                     Player currentPlayer = findCurrentPlayer();
                                     Town newTown = new Town(nodesDict.get(node).getNodeCoordinates(), nodesDict.get(node).getConnectedNodes(),
                                             nodesDict.get(node).getConnectedTiles(), currentPlayer.getPlayerColour(), nodesDict.get(node).getNodeBoardCoordinates());
@@ -164,27 +170,18 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
                                     buildSettlementButton.setVisible(false);
                                     buildRoadButton.setVisible(true);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    else if (gameState == GameState.NORMAL_PLAY) {
-                        Player currentPlayer = findCurrentPlayer();
-                        outerLoop:
-                        for (ArrayList<Integer> node : nodesDict.keySet()) {
-                            if (mouseX >= nodesDict.get(node).getNodeBoardCoordinates().getFirst() &&
-                                    mouseX <= nodesDict.get(node).getNodeBoardCoordinates().getFirst() + 20 &&
-                                    mouseY >= nodesDict.get(node).getNodeBoardCoordinates().getLast() &&
-                                    mouseY <= nodesDict.get(node).getNodeBoardCoordinates().getLast() + 20 &&
-                                    !nodesDict.get(node).isHasSettlement()) {
-                                for (Node neighbourNode : nodesDict.get(node).getConnectedNodes()) {
-                                    if (neighbourNode.isHasSettlement()) {
-                                        neighbouring_settlement = true;
-                                        break;
+
+                                    if (currentPlayer.getInitialPlacements() == TOTAL_INITIAL_PLACEMENTS) {
+                                        ArrayList<Tile> tiles = nodesDict.get(node).getConnectedTiles();
+                                        HashMap<ResourceType, Integer> newResources = new HashMap<>();
+                                        for (Tile tile : tiles)
+                                            newResources.put(tile.getTileResource(), 1);
+                                        currentPlayer.updatePlayerResourcesDict(newResources);
                                     }
-                                }
-                                if (!neighbouring_settlement) {
+                                    break;
+                                } else if (gameState == GameState.NORMAL_PLAY) {
+                                    Player currentPlayer = findCurrentPlayer();
+                                    outerLoop:
                                     for (ArrayList<ArrayList<Integer>> roads : currentPlayer.getPlayerRoadsDict().keySet()) {
                                         for (ArrayList<Integer> roadNode : roads) {
                                             if (roadNode.equals(node)) {
@@ -217,16 +214,17 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 if (upgradingToCity && gameState == GameState.NORMAL_PLAY) {
                     System.out.println(mouseX);
                     System.out.println(mouseY);
-                    for (ArrayList<Integer> town : townsDict.keySet()) {
-                        if (mouseX >= townsDict.get(town).getTownBoardCoordinates().getFirst() &&
-                                mouseX <= townsDict.get(town).getTownBoardCoordinates().getFirst() + 20 &&
-                                mouseY >= townsDict.get(town).getTownBoardCoordinates().getLast() &&
-                                mouseY <= townsDict.get(town).getTownBoardCoordinates().getLast() + 20 &&
-                                !townsDict.get(town).isCity()) {
-                            Player currentPlayer = findCurrentPlayer();
-                            System.out.println(townsDict.get(town).getTownCoordinates());
-                            townsDict.get(town).setCity(true);
-                            currentPlayer.updatePlayerTownsDict(townsDict.get(town));
+                    Player currentPlayer = findCurrentPlayer();
+                    HashMap<ArrayList<Integer>, Town> playerTownsDict = currentPlayer.getPlayerTownsDict();
+                    for (ArrayList<Integer> town : playerTownsDict.keySet()) {
+                        if (mouseX >= playerTownsDict.get(town).getTownBoardCoordinates().getFirst() &&
+                                mouseX <= playerTownsDict.get(town).getTownBoardCoordinates().getFirst() + 20 &&
+                                mouseY >= playerTownsDict.get(town).getTownBoardCoordinates().getLast() &&
+                                mouseY <= playerTownsDict.get(town).getTownBoardCoordinates().getLast() + 20 &&
+                                !playerTownsDict.get(town).isCity()) {
+                            System.out.println(playerTownsDict.get(town).getTownCoordinates());
+                            playerTownsDict.get(town).setCity(true);
+                            currentPlayer.updatePlayerTownsDict(playerTownsDict.get(town));
                             currentPlayer.setScore(currentPlayer.getScore() + 1);
 
                             HashMap<ResourceType, Integer> removedResources = new HashMap<>();
@@ -325,25 +323,29 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                     currentPlayer.updatePlayerResourcesDict(removedResources);
                                 }
 
+                                if (gameState == GameState.INITIAL_PLACEMENT) {
+                                    buildRoadButton.setVisible(false);
+                                    buildSettlementButton.setVisible(true);
+                                    if (currentPlayer.getInitialPlacements() >= 2) {
+                                        gameState = GameState.NORMAL_PLAY;
+                                        rollDiceButton.setVisible(true);
+                                        buildRoadButton.setVisible(false);
+                                        buildSettlementButton.setVisible(false);
+                                        upgradeSettlementButton.setVisible(false);
+                                        endTurnButton.setVisible(false);
+                                    }
+                                }
+
                                 buildingNewRoad = false;
                                 break outerLoop;
                             }
                         }
                     }
-
-                    if (gameState == GameState.INITIAL_PLACEMENT) {
-                        buildRoadButton.setVisible(false);
-                        buildSettlementButton.setVisible(true);
-                        if (currentPlayer.getInitialPlacements() >= 2) {
-                            gameState = GameState.NORMAL_PLAY;
-                            buildRoadButton.setVisible(true);
-                            rollDiceButton.setVisible(true);
-                            upgradeSettlementButton.setVisible(true);
-                        }
-                    }
                 }
                 gamePanel.repaint();
                 Player currentPlayer = findCurrentPlayer();
+                currentUserScoreLabel.setText("Your Score: " + String.valueOf(currentPlayer.getScore()));
+
                 System.out.println("BRICK: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK));
                 System.out.println("LUMBER: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER));
                 System.out.println("GRAIN: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.GRAIN));
@@ -355,23 +357,29 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
         rollDiceButton = new JButton("Roll Dice") {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(100, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
+                super.setBounds(DEFAULT_GAME_WIDTH / 2 - 100, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
             }
         };
 
         buildRoadButton = new JButton("Build Road") {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(350, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
+                super.setBounds(100, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
             }
         };
 
         buildSettlementButton = new JButton("Build Settlement") {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(600, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
+                super.setBounds(350, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
             }
         };
 
         upgradeSettlementButton = new JButton("Upgrade to City") {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(600, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
+            }
+        };
+
+        endTurnButton = new JButton("End Turn") {
             public void setBounds(int x, int y, int width, int height) {
                 super.setBounds(850, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
             }
@@ -379,16 +387,24 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
         diceRollLabel = new JLabel() {
           public void setBounds(int x, int y, int width, int height) {
-              super.setBounds(DEFAULT_GAME_WIDTH / 2, DEFAULT_GAME_HEIGHT - 300, 100, 100);
+              super.setBounds(DEFAULT_GAME_WIDTH / 2 - 50, DEFAULT_GAME_HEIGHT - 300, 100, 100);
           }
+        };
+
+        currentUserScoreLabel = new JLabel("Your Score: 0") {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(50, DEFAULT_GAME_HEIGHT - 300, 300, 100);
+            }
         };
 
         if (gameState == GameState.INITIAL_PLACEMENT) {
             buildRoadButton.setVisible(false);
             rollDiceButton.setVisible(false);
             upgradeSettlementButton.setVisible(false);
+            endTurnButton.setVisible(false);
             diceRollLabel.setVisible(false);
             diceRollLabel.setFont(DICE_ROLL_FONT);
+            currentUserScoreLabel.setFont(SCORE_FONT);
         }
 
         rollDiceButton.addActionListener(new ActionListener() {
@@ -401,12 +417,12 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 int diceRoll1 = random.nextInt(6) + 1;
                 int diceRoll2 = random.nextInt(6) + 1;
                 int diceValue = diceRoll1 + diceRoll2;
-                diceRollLabel.setVisible(true);
-                diceRollLabel.setText(String.valueOf(diceValue));
 
                 Player currentPlayer = findCurrentPlayer();
                 HashMap<ArrayList<Integer>, Town> playerTownsDict = currentPlayer.getPlayerTownsDict();
-                // Town town = playerTownsDict.get(Arrays.asList(1, 2));
+
+                diceRollLabel.setVisible(true);
+                diceRollLabel.setText(String.valueOf(diceValue));
 
                 HashMap<ResourceType, Integer> newResources = new HashMap<>();
                 for (Tile tile : tilesDict.values()) {
@@ -414,16 +430,23 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                         for (ArrayList<Integer> town : playerTownsDict.keySet()) {
                             if (playerTownsDict.get(town).getTownCoordinates().equals(tileNode) &&
                                     tile.getRollValue() == diceValue) {
+                                int resourceAmount = playerTownsDict.get(town).isCity() ? 2 : 1;
                                 if (newResources.containsKey(tile.getTileResource()))
-                                    newResources.put(tile.getTileResource(), newResources.get(tile.getTileResource()) + 1);
+                                    newResources.put(tile.getTileResource(), newResources.get(tile.getTileResource()) + resourceAmount);
                                 else
-                                    newResources.put(tile.getTileResource(), 1);
+                                    newResources.put(tile.getTileResource(), resourceAmount);
                             }
                         }
                     }
                 }
+
+                rollDiceButton.setVisible(false);
+                buildRoadButton.setVisible(true);
+                buildSettlementButton.setVisible(true);
+                upgradeSettlementButton.setVisible(true);
+                endTurnButton.setVisible(true);
+
                 currentPlayer.updatePlayerResourcesDict(newResources);
-                gamePanel.repaint();
             }
         });
 
@@ -471,11 +494,28 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
         });
 
+        endTurnButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                buildingNewSettlement = false;
+                buildingNewRoad = false;
+                upgradingToCity = false;
+
+                rollDiceButton.setVisible(true);
+                buildRoadButton.setVisible(false);
+                buildSettlementButton.setVisible(false);
+                upgradeSettlementButton.setVisible(false);
+                endTurnButton.setVisible(false);
+            }
+        });
+
         gamePanel.add(rollDiceButton);
         gamePanel.add(buildRoadButton);
         gamePanel.add(buildSettlementButton);
         gamePanel.add(upgradeSettlementButton);
+        gamePanel.add(endTurnButton);
         gamePanel.add(diceRollLabel);
+        gamePanel.add(currentUserScoreLabel);
 
         this.setSize(DEFAULT_GAME_WIDTH, DEFAULT_GAME_HEIGHT);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
