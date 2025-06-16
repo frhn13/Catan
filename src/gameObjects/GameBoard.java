@@ -16,6 +16,74 @@ public class GameBoard {
     private static int currentPlayerTurn;
 
     public GameBoard() {
+        resetGameBoard();
+    }
+
+    public static GameBoard getGameBoard() {
+        return gameBoard;
+    }
+
+    public static void setGameBoard(GameBoard gameBoard) {
+        GameBoard.gameBoard = gameBoard;
+    }
+
+    public static HashMap<ArrayList<Integer>, Tile> getTilesDict() {
+        return tilesDict;
+    }
+
+    public static void setTilesDict(HashMap<ArrayList<Integer>, Tile> tilesDict) {
+        GameBoard.tilesDict = tilesDict;
+    }
+
+    public static HashMap<ArrayList<Integer>, Node> getNodesDict() {
+        return nodesDict;
+    }
+
+    public static void setNodesDict(HashMap<ArrayList<Integer>, Node> nodesDict) {
+        GameBoard.nodesDict = nodesDict;
+    }
+
+    public static HashMap<ArrayList<Integer>, Town> getTownsDict() {
+        return townsDict;
+    }
+
+    public static void setTownsDict(HashMap<ArrayList<Integer>, Town> townsDict) {
+        GameBoard.townsDict = townsDict;
+    }
+
+    public static void updatePlayerTownsDict(Town town) {
+        townsDict.put(town.getTownCoordinates(), town);
+    }
+
+    public static HashMap<ArrayList<ArrayList<Integer>>, Road> getRoadsDict() {
+        return roadsDict;
+    }
+
+    public static void setRoadsDict(HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict) {
+        GameBoard.roadsDict = roadsDict;
+    }
+
+    public static void updateRoadsDict(Road newRoad) {
+        roadsDict.put(newRoad.getRoadNodeCoordinates(), newRoad);
+    }
+
+    public static ArrayList<Player> getAllPlayers() {
+        return allPlayers;
+    }
+
+    public static void setAllPlayers(ArrayList<Player> allPlayers) {
+        GameBoard.allPlayers = allPlayers;
+    }
+
+    public static int getCurrentPlayerTurn() {
+        return currentPlayerTurn;
+    }
+
+    public static void setCurrentPlayerTurn(int currentPlayerTurn) {
+        GameBoard.currentPlayerTurn = currentPlayerTurn;
+    }
+
+    public static void resetGameBoard() {
         nodesDict = new HashMap<>();
         tilesDict = new HashMap<>();
         townsDict = new HashMap<>();
@@ -197,69 +265,5 @@ public class GameBoard {
                 }
             }
         }
-    }
-
-    public static GameBoard getGameBoard() {
-        return gameBoard;
-    }
-
-    public static void setGameBoard(GameBoard gameBoard) {
-        GameBoard.gameBoard = gameBoard;
-    }
-
-    public static HashMap<ArrayList<Integer>, Tile> getTilesDict() {
-        return tilesDict;
-    }
-
-    public static void setTilesDict(HashMap<ArrayList<Integer>, Tile> tilesDict) {
-        GameBoard.tilesDict = tilesDict;
-    }
-
-    public static HashMap<ArrayList<Integer>, Node> getNodesDict() {
-        return nodesDict;
-    }
-
-    public static void setNodesDict(HashMap<ArrayList<Integer>, Node> nodesDict) {
-        GameBoard.nodesDict = nodesDict;
-    }
-
-    public static HashMap<ArrayList<Integer>, Town> getTownsDict() {
-        return townsDict;
-    }
-
-    public static void setTownsDict(HashMap<ArrayList<Integer>, Town> townsDict) {
-        GameBoard.townsDict = townsDict;
-    }
-
-    public static void updatePlayerTownsDict(Town town) {
-        townsDict.put(town.getTownCoordinates(), town);
-    }
-
-    public static HashMap<ArrayList<ArrayList<Integer>>, Road> getRoadsDict() {
-        return roadsDict;
-    }
-
-    public static void setRoadsDict(HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict) {
-        GameBoard.roadsDict = roadsDict;
-    }
-
-    public static void updateRoadsDict(Road newRoad) {
-        roadsDict.put(newRoad.getRoadNodeCoordinates(), newRoad);
-    }
-
-    public static ArrayList<Player> getAllPlayers() {
-        return allPlayers;
-    }
-
-    public static void setAllPlayers(ArrayList<Player> allPlayers) {
-        GameBoard.allPlayers = allPlayers;
-    }
-
-    public static int getCurrentPlayerTurn() {
-        return currentPlayerTurn;
-    }
-
-    public static void setCurrentPlayerTurn(int currentPlayerTurn) {
-        GameBoard.currentPlayerTurn = currentPlayerTurn;
     }
 }
