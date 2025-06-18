@@ -3,38 +3,42 @@ import gameObjects.Node;
 import gameObjects.Tile;
 import gameVisualisation.MainGame;
 
+import java.io.*;
+import java.net.*;
 import java.util.ArrayList;
 
-public static void main(String[] args) {
-    for (ArrayList<Integer> tile : GameBoard.getTilesDict().keySet()) {
-        System.out.println("Tile:");
-        System.out.println("[" + GameBoard.getTilesDict().get(tile).getTileCoordinates().getFirst() + ", " + GameBoard.getTilesDict().get(tile).getTileCoordinates().getLast() + "], " + GameBoard.getTilesDict().get(tile).getTileResource() + ", " + GameBoard.getTilesDict().get(tile).getRollValue());
-        System.out.println("Nodes");
-        for (ArrayList<Integer> node: GameBoard.getTilesDict().get(tile).getCorrespondingNodeCoordinates()) {
-            System.out.println(node);
-        }
-    }
-    System.out.println();
 
-    for (ArrayList<Integer> node : GameBoard.getNodesDict().keySet()) {
-        System.out.println("Node:");
-        System.out.println("[" + GameBoard.getNodesDict().get(node).getNodeCoordinates().getFirst() + ", " + GameBoard.getNodesDict().get(node).getNodeCoordinates().getLast() + "]");
-        System.out.println("Tiles:");
-        for (Tile tile: GameBoard.getNodesDict().get(node).getConnectedTiles()) {
-            System.out.println(tile.getTileCoordinates());
-        }
-        System.out.println();
+public class Main {
+    private ClientSideConnection csc;
+    private int playerID;
+    private int otherPlayer;
+
+    public void connectToServer() {
+        csc = new ClientSideConnection();
     }
 
-    for (ArrayList<Integer> node : GameBoard.getNodesDict().keySet()) {
-        System.out.println("Node:");
-        System.out.println("[" + GameBoard.getNodesDict().get(node).getNodeCoordinates().getFirst() + ", " + GameBoard.getNodesDict().get(node).getNodeCoordinates().getLast() + "]");
-        System.out.println("Nodes:");
-        for (Node newNode: GameBoard.getNodesDict().get(node).getConnectedNodes()) {
-            System.out.println(newNode.getNodeCoordinates());
+    private class ClientSideConnection {
+        private Socket socket;
+        private DataInputStream dataIn;
+        private DataOutputStream dataOut;
+
+        public ClientSideConnection() {
+            System.out.println("---Client---");
+            try {
+                socket = new Socket("localhost", 44444);
+                dataIn = new DataInputStream(socket.getInputStream());
+                dataOut = new DataOutputStream(socket.getOutputStream());
+                playerID = dataIn.readInt();
+                System.out.println("Connected to server as Player #"+playerID+".");
+            } catch (IOException e) {
+                System.out.println("IO Exception occurred from CSC Constructor");
+            }
         }
-        System.out.println();
+    }
+    public static void main(String[] args) {
+        Main m = new Main();
+        m.connectToServer();
+        new MainGame();
     }
 
-    new MainGame();
 }
