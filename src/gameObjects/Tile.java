@@ -2,9 +2,10 @@ package gameObjects;
 
 import Constants.ResourceType;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Tile {
+public class Tile implements Serializable {
 
     private ArrayList<Integer> tileCoordinates = new ArrayList<>();
     private ResourceType tileResource;

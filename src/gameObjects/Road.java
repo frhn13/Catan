@@ -2,9 +2,10 @@ package gameObjects;
 
 import Constants.PlayerColour;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Road {
+public class Road implements Serializable {
     private ArrayList<ArrayList<Integer>> roadNodeCoordinates;
     private ArrayList<Node> roadNodes;
     private PlayerColour roadColour;

@@ -1,5 +1,7 @@
 package Server;
 
+import gameObjects.GameBoard;
+
 import java.io.*;
 import java.net.*;
 
@@ -31,14 +33,13 @@ public class GameServer {
             while (numPlayers < 4) {
                 Socket socket = serverSocket.accept();
                 numPlayers++;
-                System.out.println("Player Number " + numPlayers + " has connected.");
                 ServerSideConnection ssc = new ServerSideConnection(socket, numPlayers);
+                System.out.println("Player Number " + numPlayers + " has connected.");
                 switch (numPlayers) {
                     case 1 -> player1 = ssc;
                     case 2 -> player2 = ssc;
                     case 3 -> player3 = ssc;
-                    case 4 -> player4 = ssc;
-                    default -> player1 = ssc;
+                    default -> player4 = ssc;
                 }
                 Thread t = new Thread(ssc);
                 t.start();
@@ -51,16 +52,17 @@ public class GameServer {
 
     private class ServerSideConnection implements Runnable {
         private Socket socket;
-        private DataInputStream dataIn;
-        private DataOutputStream dataOut;
+        private ObjectInputStream dataIn;
+        private ObjectOutputStream dataOut;
         private int playerID;
 
         public ServerSideConnection(Socket s, int id) {
             socket = s;
             playerID = id;
             try {
-                dataIn = new DataInputStream(socket.getInputStream());
-                dataOut = new DataOutputStream(socket.getOutputStream());
+                dataOut = new ObjectOutputStream(socket.getOutputStream());
+                dataOut.flush();
+                dataIn = new ObjectInputStream(socket.getInputStream());
             } catch (IOException e) {
                 System.out.println("IOException from run() SSC");
             }
@@ -68,13 +70,18 @@ public class GameServer {
         public void run() {
             try {
                 dataOut.writeInt(playerID);
+                dataOut.writeObject(GameBoard.getTilesDict());
+                dataOut.writeObject(GameBoard.getNodesDict());
+                dataOut.writeObject(GameBoard.getTownsDict());
+                dataOut.writeObject(GameBoard.getRoadsDict());
+                dataOut.writeObject(GameBoard.getCurrentPlayerTurn());
                 dataOut.flush();
 
                 while (true) {
-
+                    // receive move, apply to GameBoard, broadcast if needed
                 }
             } catch (IOException e) {
-                System.out.println("IOException from run() SSC");
+                System.out.println("IOException from run() SSC" + e.getMessage());
             }
         }
     }

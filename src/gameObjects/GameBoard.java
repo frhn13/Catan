@@ -3,9 +3,10 @@ package gameObjects;
 import Constants.PlayerColour;
 import Constants.ResourceType;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class GameBoard {
+public class GameBoard implements Serializable {
 
     private static GameBoard gameBoard = new GameBoard();
     private static HashMap<ArrayList<Integer>, Tile> tilesDict;

@@ -2,9 +2,10 @@ package gameObjects;
 
 import Constants.PlayerColour;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Town {
+public class Town implements Serializable {
     private ArrayList<Integer> townCoordinates;
     private ArrayList<Node> connectedNodes;
     private ArrayList<Tile> connectedTiles;

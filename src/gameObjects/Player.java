@@ -3,10 +3,11 @@ package gameObjects;
 import Constants.PlayerColour;
 import Constants.ResourceType;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class Player {
+public class Player implements Serializable {
     private PlayerColour playerColour;
     private int playerNumber;
     private int score;
@@ -18,6 +19,20 @@ public class Player {
     public Player(PlayerColour playerColour, int playerNumber) {
         this.playerColour = playerColour;
         this.playerNumber = playerNumber;
+        this.score = 0;
+        this.playerTownsDict = new HashMap<>();
+        this.playerRoadsDict = new HashMap<>();
+        this.playerResourcesDict = new HashMap<>();
+        this.initialPlacements = 0;
+
+        this.playerResourcesDict.put(ResourceType.WOOL, 20);
+        this.playerResourcesDict.put(ResourceType.GRAIN, 20);
+        this.playerResourcesDict.put(ResourceType.ORE, 20);
+        this.playerResourcesDict.put(ResourceType.LUMBER, 20);
+        this.playerResourcesDict.put(ResourceType.BRICK, 20);
+    }
+
+    public Player() {
         this.score = 0;
         this.playerTownsDict = new HashMap<>();
         this.playerRoadsDict = new HashMap<>();

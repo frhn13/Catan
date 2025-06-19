@@ -1,5 +1,6 @@
 package gameVisualisation;
 
+import Client.GameClient;
 import Constants.GameState;
 import Constants.ResourceType;
 import gameObjects.*;
@@ -38,6 +39,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     StringBuilder finalSettlements = new StringBuilder();
     StringBuilder finalCities = new StringBuilder();
 
+    Player player = new Player();
+    GameClient gameClient = new GameClient();
+
     ArrayList<Player> players = GameBoard.getAllPlayers();
     HashMap<ArrayList<Integer>, Tile> tilesDict = GameBoard.getTilesDict();
     HashMap<ArrayList<Integer>, Node> nodesDict = GameBoard.getNodesDict();
@@ -47,7 +51,14 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     GameState gameState = GameState.INITIAL_PLACEMENT;
 
     public MainGame() {
+        gameClient.connectToServer();
+        player.setPlayerNumber(gameClient.getPlayerID());
+        player.setPlayerColour(gameClient.getPlayerColour());
 
+        System.out.println(gameClient.getTilesDict());
+        System.out.println(gameClient.getNodesDict());
+
+        System.out.println("Connected to server as Player #"+player.getPlayerNumber()+" with colour "+player.getPlayerColour()+".");
         // Post page panel code
         endgamePanel = new JPanel();
 

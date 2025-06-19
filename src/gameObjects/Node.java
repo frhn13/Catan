@@ -1,8 +1,9 @@
 package gameObjects;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Node {
+public class Node implements Serializable {
     private ArrayList<Integer> nodeCoordinates;
     private ArrayList<Node> connectedNodes;
     private ArrayList<Tile> connectedTiles;
