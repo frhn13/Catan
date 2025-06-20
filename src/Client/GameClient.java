@@ -1,5 +1,6 @@
 package Client;
 
+import Constants.GameState;
 import Constants.PlayerColour;
 import gameObjects.*;
 
@@ -11,51 +12,49 @@ import java.util.HashMap;
 public class GameClient {
 
     private ClientSideConnection csc;
-    private int playerID;
-    private PlayerColour playerColour;
+    private Player player;
     private HashMap<ArrayList<Integer>, Tile> tilesDict;
     private HashMap<ArrayList<Integer>, Node> nodesDict;
     private HashMap<ArrayList<Integer>, Town> townsDict;
     private HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict;
+    private GameState gameState;
+    private int currentPlayerTurn;
 
     public void connectToServer() {
         csc = new ClientSideConnection();
-        System.out.println("Yo");
-        this.playerID = csc.playerID;
-        switch (this.playerID) {
-            case 1:
-                this.playerColour = PlayerColour.RED;
-                break;
-            case 2:
-                this.playerColour = PlayerColour.BLUE;
-                break;
-            case 3:
-                this.playerColour = PlayerColour.GREEN;
-                break;
-            default:
-                this.playerColour = PlayerColour.ORANGE;
-                break;
-        }
+        int playerID = csc.playerID;
+        PlayerColour playerColour = switch (playerID) {
+            case 1 -> PlayerColour.RED;
+            case 2 -> PlayerColour.BLUE;
+            case 3 -> PlayerColour.GREEN;
+            default -> PlayerColour.ORANGE;
+        };
         this.tilesDict = csc.tilesDict;
         this.nodesDict = csc.nodesDict;
         this.townsDict = csc.townsDict;
         this.roadsDict = csc.roadsDict;
+        this.player = new Player(playerColour, playerID);
+        this.gameState = GameState.LOBBY;
+        this.currentPlayerTurn = csc.currentPlayerTurn;
+
+        csc.sendPlayer(this.player);
+        csc.waitForStartSignal();
     }
 
-    public int getPlayerID() {
-        return playerID;
+    public Player getPlayer() {
+        return player;
     }
 
-    public void setPlayerID(int playerID) {
-        this.playerID = playerID;
+    public void setPlayer(Player player) {
+        this.player = player;
     }
 
-    public PlayerColour getPlayerColour() {
-        return playerColour;
+    public GameState getGameState() {
+        return gameState;
     }
 
-    public void setPlayerColour(PlayerColour playerColour) {
-        this.playerColour = playerColour;
+    public void setGameState(GameState gameState) {
+        this.gameState = gameState;
     }
 
     public HashMap<ArrayList<Integer>, Tile> getTilesDict() {
@@ -101,6 +100,7 @@ public class GameClient {
         private HashMap<ArrayList<Integer>, Node> nodesDict;
         private HashMap<ArrayList<Integer>, Town> townsDict;
         private HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict;
+        private int currentPlayerTurn;
 
         public ClientSideConnection() {
             System.out.println("---Client---");
@@ -114,9 +114,31 @@ public class GameClient {
                 nodesDict = (HashMap<ArrayList<Integer>, Node>) dataIn.readObject();
                 townsDict = (HashMap<ArrayList<Integer>, Town>) dataIn.readObject();
                 roadsDict = (HashMap<ArrayList<ArrayList<Integer>>, Road>) dataIn.readObject();
+                currentPlayerTurn = dataIn.readInt();
 
             } catch (IOException e) {
-                System.out.println("IO Exception occurred from CSC Constructor");
+                System.out.println("IO Exception occurred from CSC Constructor: " + e.getMessage());
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        public void sendPlayer(Player player) {
+            try {
+                dataOut.writeObject(player);
+                dataOut.flush();
+            } catch (IOException e) {
+                System.out.println("IOException from sendPlayer() CSC");
+            }
+        }
+        public void waitForStartSignal() {
+            try {
+                Object obj = dataIn.readObject();
+                System.out.println(obj);
+                if (obj instanceof GameState state && state == GameState.INITIAL_PLACEMENT) {
+                    gameState = GameState.INITIAL_PLACEMENT;
+                }
+            } catch (IOException e) {
+                System.out.println("IOException occurred from waitForStartSignal() CSC");
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }

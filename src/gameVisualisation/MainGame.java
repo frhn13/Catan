@@ -39,7 +39,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     StringBuilder finalSettlements = new StringBuilder();
     StringBuilder finalCities = new StringBuilder();
 
-    Player player = new Player();
+    Player player;
     GameClient gameClient = new GameClient();
 
     ArrayList<Player> players = GameBoard.getAllPlayers();
@@ -52,11 +52,15 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
     public MainGame() {
         gameClient.connectToServer();
-        player.setPlayerNumber(gameClient.getPlayerID());
-        player.setPlayerColour(gameClient.getPlayerColour());
 
         System.out.println(gameClient.getTilesDict());
         System.out.println(gameClient.getNodesDict());
+        tilesDict = gameClient.getTilesDict();
+        nodesDict = gameClient.getNodesDict();
+        townsDict = gameClient.getTownsDict();
+        roadsDict = gameClient.getRoadsDict();
+        player = gameClient.getPlayer();
+        gameState = gameClient.getGameState();
 
         System.out.println("Connected to server as Player #"+player.getPlayerNumber()+" with colour "+player.getPlayerColour()+".");
         // Post page panel code
@@ -130,7 +134,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 int card_num = 0;
                 for (ResourceType resource : currentPlayer.getPlayerResourcesDict().keySet()) {
                     if (currentPlayer.getPlayerResourcesDict().get(resource) > 0) {
-                        Image cardImg = new ImageIcon(getClass().getResource("/Images/gameCards/" + resource.cardImage)).getImage();
+                        Image cardImg = new ImageIcon(Objects.requireNonNull(getClass().getResource("/Images/gameCards/" + resource.cardImage))).getImage();
                         g.drawImage(cardImg, card_num * 100 + 50, DEFAULT_GAME_HEIGHT - 130, CARD_WIDTH, CARD_HEIGHT, null);
                         g.setFont(new Font("Arial", Font.BOLD, 30));
                         g.setColor(Color.black);
@@ -139,17 +143,15 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     }
                 }
 
-                HashMap<ArrayList<Integer>, Tile> tilesDict = GameBoard.getTilesDict();
                 int base_x;
                 for (ArrayList<Integer> tile : tilesDict.keySet()) {
-                    //g.setColor(tilesDict.get(tile).getTileResource().colour);
                     base_x = switch (tilesDict.get(tile).getTileCoordinates().getLast()) {
                         case 0, 4 -> 300;
                         case 1, 3 -> 200;
                         default -> 100;
                     };
                     try {
-                        Image tileImg = new ImageIcon(getClass().getResource("/Images/gameTiles/" + tilesDict.get(tile).getTileResource().tileImage)).getImage();
+                        Image tileImg = new ImageIcon(Objects.requireNonNull(getClass().getResource("/Images/gameTiles/" + tilesDict.get(tile).getTileResource().tileImage))).getImage();
                         g.drawImage(tileImg, tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x, tilesDict.get(tile).getTileCoordinates().getLast() * 150 + 50, TILE_WIDTH, TILE_HEIGHT, null);
                         //g.fillRect(tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x, tilesDict.get(tile).getTileCoordinates().getLast() * 200 + 50, 100, 100);
                         g.setFont(new Font("Arial", Font.BOLD, 50));
@@ -493,7 +495,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
         };
 
-        if (gameState == GameState.INITIAL_PLACEMENT) {
+        if (gameClient.getGameState() == GameState.INITIAL_PLACEMENT) {
             buildRoadButton.setVisible(false);
             rollDiceButton.setVisible(false);
             upgradeSettlementButton.setVisible(false);
