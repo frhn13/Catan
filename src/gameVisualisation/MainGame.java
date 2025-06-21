@@ -1,13 +1,17 @@
 package gameVisualisation;
 
-import Client.GameClient;
 import Constants.GameState;
+import Constants.PlayerColour;
 import Constants.ResourceType;
 import gameObjects.*;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.util.*;
 
 import static Constants.Constants.*;
@@ -53,14 +57,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     public MainGame() {
         gameClient.connectToServer();
 
-        System.out.println(gameClient.getTilesDict());
-        System.out.println(gameClient.getNodesDict());
-        tilesDict = gameClient.getTilesDict();
-        nodesDict = gameClient.getNodesDict();
-        townsDict = gameClient.getTownsDict();
-        roadsDict = gameClient.getRoadsDict();
-        player = gameClient.getPlayer();
-        gameState = gameClient.getGameState();
+        System.out.println(tilesDict);
+        System.out.println(nodesDict);
 
         System.out.println("Connected to server as Player #"+player.getPlayerNumber()+" with colour "+player.getPlayerColour()+".");
         // Post page panel code
@@ -129,16 +127,14 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             public void paintComponent(Graphics g) {
                 super.paintComponent(g);
 
-                Player currentPlayer = findCurrentPlayer();
-                System.out.println(currentPlayer.getPlayerNumber());
                 int card_num = 0;
-                for (ResourceType resource : currentPlayer.getPlayerResourcesDict().keySet()) {
-                    if (currentPlayer.getPlayerResourcesDict().get(resource) > 0) {
+                for (ResourceType resource : player.getPlayerResourcesDict().keySet()) {
+                    if (player.getPlayerResourcesDict().get(resource) > 0) {
                         Image cardImg = new ImageIcon(Objects.requireNonNull(getClass().getResource("/Images/gameCards/" + resource.cardImage))).getImage();
                         g.drawImage(cardImg, card_num * 100 + 50, DEFAULT_GAME_HEIGHT - 130, CARD_WIDTH, CARD_HEIGHT, null);
                         g.setFont(new Font("Arial", Font.BOLD, 30));
                         g.setColor(Color.black);
-                        g.drawString(String.valueOf(currentPlayer.getPlayerResourcesDict().get(resource)), card_num * 100 + 70, DEFAULT_GAME_HEIGHT - 90);
+                        g.drawString(String.valueOf(player.getPlayerResourcesDict().get(resource)), card_num * 100 + 70, DEFAULT_GAME_HEIGHT - 90);
                         card_num++;
                     }
                 }
@@ -237,18 +233,23 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                     Player currentPlayer = findCurrentPlayer();
                                     Town newTown = new Town(nodesDict.get(node).getNodeCoordinates(), nodesDict.get(node).getConnectedNodes(),
                                             nodesDict.get(node).getConnectedTiles(), currentPlayer.getPlayerColour(), nodesDict.get(node).getNodeBoardCoordinates());
-                                    currentPlayer.updatePlayerTownsDict(newTown);
-                                    GameBoard.updatePlayerTownsDict(newTown);
-                                    currentPlayer.setScore(currentPlayer.getScore() + 1);
+                                    player.updatePlayerTownsDict(newTown);
 
-                                    currentPlayer.setInitialPlacements(currentPlayer.getInitialPlacements() + 1);
+                                    player.setScore(currentPlayer.getScore() + 1);
+
+                                    player.setInitialPlacements(currentPlayer.getInitialPlacements() + 1);
                                     buildingNewSettlement = false;
                                     nodesDict.get(node).setHasSettlement(true);
+                                    townsDict.put(newTown.getTownCoordinates(), newTown);
 
-                                    buildSettlementButton.setVisible(false);
-                                    buildRoadButton.setVisible(true);
+                                    gameClient.addSettlement(nodesDict, townsDict, player);
 
-                                    if (currentPlayer.getInitialPlacements() == TOTAL_INITIAL_PLACEMENTS) {
+                                    if (gameClient.getCurrentPlayerTurn() == player.getPlayerNumber()) {
+                                        buildSettlementButton.setVisible(false);
+                                        buildRoadButton.setVisible(true);
+                                    }
+
+                                    if (player.getInitialPlacements() == TOTAL_INITIAL_PLACEMENTS) {
                                         ArrayList<Tile> tiles = nodesDict.get(node).getConnectedTiles();
                                         HashMap<ResourceType, Integer> newResources = new HashMap<>();
                                         for (Tile tile : tiles) {
@@ -257,7 +258,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                             else
                                                 newResources.put(tile.getTileResource(), 1);
                                         }
-                                        currentPlayer.updatePlayerResourcesDict(newResources);
+                                        player.updatePlayerResourcesDict(newResources);
                                     }
                                     break;
                                 } else if (gameState == GameState.NORMAL_PLAY) {
@@ -429,13 +430,19 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 currentUserScoreLabel.setText("Your Score: " + currentPlayer.getScore());
                 currentUserLabel.setText(String.valueOf(currentPlayer.getPlayerColour()).toLowerCase() + "'s Turn");
 
+//                nodesDict = gameClient.getNodesDict();
+//                townsDict = gameClient.getTownsDict();
+//                roadsDict = gameClient.getRoadsDict();
+//                tilesDict = gameClient.getTilesDict();
+//                gameState = gameClient.getGameState();
+                gamePanel.repaint();
+
                 System.out.println("BRICK: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK));
                 System.out.println("LUMBER: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER));
                 System.out.println("GRAIN: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.GRAIN));
                 System.out.println("WOOL: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.WOOL));
                 System.out.println("ORE: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.ORE));
                 System.out.println(gameState);
-                gamePanel.repaint();
 
                 if (currentPlayer.getScore() >= WINNING_SCORE) {
                     gameState = GameState.ENDGAME;
@@ -495,7 +502,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
         };
 
-        if (gameClient.getGameState() == GameState.INITIAL_PLACEMENT) {
+        if (gameState == GameState.INITIAL_PLACEMENT || gameState == GameState.LOBBY) {
+            buildSettlementButton.setVisible(false);
             buildRoadButton.setVisible(false);
             rollDiceButton.setVisible(false);
             upgradeSettlementButton.setVisible(false);
@@ -504,6 +512,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             diceRollLabel.setFont(DICE_ROLL_FONT);
             currentUserScoreLabel.setFont(SCORE_FONT);
             currentUserLabel.setFont(SCORE_FONT);
+            if (gameClient.getCurrentPlayerTurn() == player.getPlayerNumber()) {
+                buildSettlementButton.setVisible(true);
+            }
         }
 
         rollDiceButton.addActionListener(new ActionListener() {
@@ -630,7 +641,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         this.setLocationRelativeTo(null);
         this.setResizable(false);
 
-        if (gameState == GameState.INITIAL_PLACEMENT) {
+        if (gameState == GameState.INITIAL_PLACEMENT || gameState == GameState.LOBBY) {
             this.add(gamePanel);
             this.remove(endgamePanel);
             this.repaint();
@@ -711,5 +722,136 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         this.add(gamePanel);
         this.remove(endgamePanel);
         this.repaint();
+    }
+
+    public class GameClient {
+
+        private ClientSideConnection csc;
+        private int currentPlayerTurn;
+
+        public void connectToServer() {
+            csc = new ClientSideConnection();
+            int playerID = csc.playerID;
+            PlayerColour playerColour = switch (playerID) {
+                case 1 -> PlayerColour.RED;
+                case 2 -> PlayerColour.BLUE;
+                case 3 -> PlayerColour.GREEN;
+                default -> PlayerColour.ORANGE;
+            };
+            player = new Player(playerColour, playerID);
+            gameState = GameState.LOBBY;
+
+            csc.sendPlayer(player);
+            //csc.waitForStartSignal();
+            csc.listenForServerUpdates();
+        }
+
+        public int getCurrentPlayerTurn() {
+            return currentPlayerTurn;
+        }
+
+        public void setCurrentPlayerTurn(int currentPlayerTurn) {
+            this.currentPlayerTurn = currentPlayerTurn;
+        }
+
+        public void addSettlement(HashMap<ArrayList<Integer>, Node> newNodes, HashMap<ArrayList<Integer>, Town> newTowns, Player newPlayer) {
+            nodesDict = newNodes;
+            townsDict = newTowns;
+            player = newPlayer;
+
+            csc.addSettlement();
+        }
+
+        public void upgradeToCity() {
+
+        }
+
+        public void addRoad() {
+
+        }
+
+        public class ClientSideConnection {
+            private Socket socket;
+            private ObjectInputStream dataIn;
+            private ObjectOutputStream dataOut;
+            private int playerID;
+
+            public ClientSideConnection() {
+                System.out.println("---Client---");
+                try {
+                    socket = new Socket("25.47.99.90", 44444);
+                    dataOut = new ObjectOutputStream(socket.getOutputStream());
+                    dataOut.flush();
+                    dataIn = new ObjectInputStream(socket.getInputStream());
+                    playerID = dataIn.readInt();
+                    tilesDict = (HashMap<ArrayList<Integer>, Tile>) dataIn.readObject();
+                    nodesDict = (HashMap<ArrayList<Integer>, Node>) dataIn.readObject();
+                    townsDict = (HashMap<ArrayList<Integer>, Town>) dataIn.readObject();
+                    roadsDict = (HashMap<ArrayList<ArrayList<Integer>>, Road>) dataIn.readObject();
+                    currentPlayerTurn = dataIn.readInt();
+                } catch (IOException e) {
+                    System.out.println("IO Exception occurred from CSC Constructor: " + e.getMessage());
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            public void sendPlayer(Player player) {
+                try {
+                    dataOut.writeObject("NEW_PLAYER");
+                    dataOut.writeObject(player);
+                    dataOut.flush();
+                } catch (IOException e) {
+                    System.out.println("IOException from sendPlayer() CSC");
+                }
+            }
+
+            public void addSettlement() {
+                try {
+                    dataOut.writeObject("NEW_TOWN");
+                    dataOut.writeObject(nodesDict);
+                    dataOut.writeObject(townsDict);
+                    dataOut.writeObject(player);
+                    dataOut.flush();
+                    // System.out.println("Hey3");
+                } catch (IOException e) {
+                    System.out.println("TOException occurred from addSettlement() CSC");
+                }
+
+            }
+
+            public void upgradeToCity() {
+
+            }
+
+            public void addRoad() {
+
+            }
+
+            public void listenForServerUpdates() {
+                new Thread(() -> {
+                    try {
+                        while (true) {
+                            Object msg = dataIn.readObject();
+                            if (msg instanceof String command) {
+                                switch (command) {
+                                    case "INITIAL_PLACEMENT":
+                                        gameState = (GameState) dataIn.readObject();
+                                        System.out.println("Yay");
+                                        break;
+                                    case "NEW_TOWN_ADDED":
+                                        nodesDict = (HashMap<ArrayList<Integer>, Node>) dataIn.readObject();
+                                        townsDict = (HashMap<ArrayList<Integer>, Town>) dataIn.readObject();
+                                        System.out.println("Hey");
+                                        break;
+                                }
+                                repaint();
+                            }
+                        }
+                    } catch (IOException | ClassNotFoundException e) {
+                        System.out.println("Exception in listenForServerUpdates() CSC");
+                    }
+                }).start();
+            }
+        }
     }
 }

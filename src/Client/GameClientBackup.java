@@ -9,7 +9,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class GameClient {
+public class GameClientBackup {
 
     private ClientSideConnection csc;
     private Player player;
@@ -29,16 +29,28 @@ public class GameClient {
             case 3 -> PlayerColour.GREEN;
             default -> PlayerColour.ORANGE;
         };
-        this.tilesDict = csc.tilesDict;
-        this.nodesDict = csc.nodesDict;
-        this.townsDict = csc.townsDict;
-        this.roadsDict = csc.roadsDict;
         this.player = new Player(playerColour, playerID);
         this.gameState = GameState.LOBBY;
-        this.currentPlayerTurn = csc.currentPlayerTurn;
 
         csc.sendPlayer(this.player);
-        csc.waitForStartSignal();
+        //csc.waitForStartSignal();
+        csc.listenForServerUpdates();
+    }
+
+    public void addSettlement(HashMap<ArrayList<Integer>, Node> newNodes, HashMap<ArrayList<Integer>, Town> newTowns, Player newPlayer) {
+        this.nodesDict = newNodes;
+        this.townsDict = newTowns;
+        this.player = newPlayer;
+
+        csc.addSettlement(this.player);
+    }
+
+    public void upgradeToCity() {
+
+    }
+
+    public void addRoad() {
+
     }
 
     public Player getPlayer() {
@@ -89,18 +101,19 @@ public class GameClient {
         this.roadsDict = roadsDict;
     }
 
+    public int getCurrentPlayerTurn() {
+        return currentPlayerTurn;
+    }
+
+    public void setCurrentPlayerTurn(int currentPlayerTurn) {
+        this.currentPlayerTurn = currentPlayerTurn;
+    }
+
     public class ClientSideConnection {
         private Socket socket;
-        private DataInputStream intDataIn;
-        private DataOutputStream intDataOut;
         private ObjectInputStream dataIn;
         private ObjectOutputStream dataOut;
         private int playerID;
-        private HashMap<ArrayList<Integer>, Tile> tilesDict;
-        private HashMap<ArrayList<Integer>, Node> nodesDict;
-        private HashMap<ArrayList<Integer>, Town> townsDict;
-        private HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict;
-        private int currentPlayerTurn;
 
         public ClientSideConnection() {
             System.out.println("---Client---");
@@ -124,6 +137,7 @@ public class GameClient {
         }
         public void sendPlayer(Player player) {
             try {
+                dataOut.writeObject("NEW_PLAYER");
                 dataOut.writeObject(player);
                 dataOut.flush();
             } catch (IOException e) {
@@ -142,6 +156,49 @@ public class GameClient {
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
+        }
+        public void addSettlement(Player player) {
+            try {
+                dataOut.writeObject("NEW_TOWN");
+                dataOut.writeObject(nodesDict);
+                dataOut.writeObject(townsDict);
+                dataOut.writeObject(player);
+                dataOut.flush();
+            } catch (IOException e) {
+                System.out.println("TOException occurred from addSettlement() CSC");
+            }
+
+        }
+
+        public void upgradeToCity() {
+
+        }
+
+        public void addRoad() {
+
+        }
+
+        public void listenForServerUpdates() {
+            new Thread(() -> {
+                try {
+                    while (true) {
+                        Object msg = dataIn.readObject();
+                        if (msg instanceof String command) {
+                            switch (command) {
+                                case "INITIAL_PLACEMENT":
+                                    gameState = (GameState) dataIn.readObject();
+                                    System.out.println("Yay");
+                                case "NEW_TOWN_ADDED":
+                                    nodesDict = (HashMap<ArrayList<Integer>, Node>) dataIn.readObject();
+                                    townsDict = (HashMap<ArrayList<Integer>, Town>) dataIn.readObject();
+                                    break;
+                            }
+                        }
+                    }
+                } catch (IOException | ClassNotFoundException e) {
+                    System.out.println("Exception in listenForServerUpdates() CSC");
+                }
+            }).start();
         }
     }
 }

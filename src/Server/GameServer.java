@@ -2,11 +2,15 @@ package Server;
 
 import Constants.GameState;
 import gameObjects.GameBoard;
+import gameObjects.Node;
 import gameObjects.Player;
+import gameObjects.Town;
 
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class GameServer {
 
@@ -52,12 +56,12 @@ public class GameServer {
                 Thread.sleep(50); // Wait briefly, avoid tight loop
             }
 
-            System.out.println("Now have 4 players. No longer accepting players");
             gameState = GameState.INITIAL_PLACEMENT;
             player1.startGame();
             player2.startGame();
             player3.startGame();
             player4.startGame();
+            System.out.println("Now have 4 players. No longer accepting players");
 
         } catch (IOException e) {
             System.out.println("IO Exception from acceptConnections()");
@@ -99,14 +103,30 @@ public class GameServer {
                 // dataOut.writeObject(gameState);
                 dataOut.flush();
 
-                Object obj = dataIn.readObject();
-                if (obj instanceof Player player) {
-                    allPlayers.add(player);
-                    System.out.println("Received player: " + player.getPlayerNumber());
-                }
-                ready = true;
+//                Object obj = dataIn.readObject();
+//                if (obj instanceof Player player) {
+//                    allPlayers.add(player);
+//                    System.out.println("Received player: " + player.getPlayerNumber());
+//                }
+//                ready = true;
                 while (true) {
                     // receive move, apply to GameBoard, broadcast if needed
+                    Object msg = dataIn.readObject();
+
+                    if (msg instanceof String command) {
+                        switch (command) {
+                            case "NEW_PLAYER":
+                                allPlayers.add((Player) dataIn.readObject());
+                                ready = true;
+                                break;
+                            case "NEW_TOWN":
+                                GameBoard.setNodesDict((HashMap<ArrayList<Integer>, Node>) dataIn.readObject());
+                                GameBoard.setTownsDict((HashMap<ArrayList<Integer>, Town>) dataIn.readObject());
+                                Player newPlayer = (Player) dataIn.readObject();
+                                broadcastNewTown();
+                                break;
+                        }
+                    }
                 }
             } catch (IOException e) {
                 System.out.println("IOException from run() SSC" + e.getMessage());
@@ -117,10 +137,25 @@ public class GameServer {
 
         public void startGame() {
             try {
-                dataOut.writeObject(GameState.INITIAL_PLACEMENT);
+                System.out.println(gameState);
+                dataOut.writeObject("INITIAL_PLACEMENT");
+                dataOut.writeObject(gameState);
                 dataOut.flush();
             } catch (IOException e) {
                 System.out.println("IOException from startGame() SSC");
+            }
+        }
+
+        public void broadcastNewTown() {
+            try {
+                System.out.println("Hey2");
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject("NEW_TOWN_ADDED");
+                    ssc.dataOut.writeObject(GameBoard.getNodesDict());
+                    ssc.dataOut.writeObject(GameBoard.getTownsDict());
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastNewTown() SSC");
             }
         }
     }
