@@ -262,16 +262,16 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                     }
                                     break;
                                 } else if (gameState == GameState.NORMAL_PLAY) {
-                                    Player currentPlayer = findCurrentPlayer();
+                                    // Player currentPlayer = findCurrentPlayer();
                                     outerLoop:
-                                    for (ArrayList<ArrayList<Integer>> roads : currentPlayer.getPlayerRoadsDict().keySet()) {
+                                    for (ArrayList<ArrayList<Integer>> roads : player.getPlayerRoadsDict().keySet()) {
                                         for (ArrayList<Integer> roadNode : roads) {
                                             if (roadNode.equals(node)) {
                                                 Town newTown = new Town(nodesDict.get(node).getNodeCoordinates(), nodesDict.get(node).getConnectedNodes(),
-                                                        nodesDict.get(node).getConnectedTiles(), currentPlayer.getPlayerColour(), nodesDict.get(node).getNodeBoardCoordinates());
-                                                currentPlayer.updatePlayerTownsDict(newTown);
-                                                GameBoard.updatePlayerTownsDict(newTown);
-                                                currentPlayer.setScore(currentPlayer.getScore() + 1);
+                                                        nodesDict.get(node).getConnectedTiles(), player.getPlayerColour(), nodesDict.get(node).getNodeBoardCoordinates());
+                                                player.updatePlayerTownsDict(newTown);
+                                                //GameBoard.updatePlayerTownsDict(newTown);
+                                                player.setScore(player.getScore() + 1);
 
                                                 HashMap<ResourceType, Integer> removedResources = new HashMap<>();
                                                 removedResources.put(ResourceType.LUMBER, -1);
@@ -279,10 +279,12 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                                 removedResources.put(ResourceType.GRAIN, -1);
                                                 removedResources.put(ResourceType.WOOL, -1);
 
-                                                currentPlayer.updatePlayerResourcesDict(removedResources);
-                                                currentPlayer.setInitialPlacements(currentPlayer.getInitialPlacements() + 1);
+                                                player.updatePlayerResourcesDict(removedResources);
+                                                player.setInitialPlacements(player.getInitialPlacements() + 1);
                                                 buildingNewSettlement = false;
                                                 nodesDict.get(node).setHasSettlement(true);
+                                                townsDict.put(newTown.getTownCoordinates(), newTown);
+                                                gameClient.addSettlement(nodesDict, townsDict, player);
                                                 break outerLoop;
                                             }
                                         }
@@ -408,7 +410,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                 if (gameState == GameState.INITIAL_PLACEMENT) {
                                     buildRoadButton.setVisible(false);
                                     buildSettlementButton.setVisible(true);
-                                    int nextTurn = currentPlayer.getPlayerNumber() < 4 ? currentPlayer.getPlayerNumber() + 1 : 1;
+                                    int nextTurn = player.getPlayerNumber() < 4 ? player.getPlayerNumber() + 1 : 1;
                                     GameBoard.setCurrentPlayerTurn(nextTurn);
                                     if (currentPlayer.getInitialPlacements() >= 2 && currentPlayer.getPlayerNumber() == 4) {
                                         gameState = GameState.NORMAL_PLAY;
@@ -824,6 +826,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
 
             public void addRoad() {
+
+            }
+
+            public void updateTurn() {
 
             }
 

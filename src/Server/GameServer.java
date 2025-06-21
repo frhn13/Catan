@@ -123,6 +123,11 @@ public class GameServer {
                                 GameBoard.setNodesDict((HashMap<ArrayList<Integer>, Node>) dataIn.readObject());
                                 GameBoard.setTownsDict((HashMap<ArrayList<Integer>, Town>) dataIn.readObject());
                                 Player newPlayer = (Player) dataIn.readObject();
+                                for (int x=0; x<allPlayers.size(); x++) {
+                                    if (allPlayers.get(x).getPlayerNumber() == newPlayer.getPlayerNumber()) {
+                                        allPlayers.set(x, newPlayer);
+                                    }
+                                }
                                 broadcastNewTown();
                                 break;
                         }
