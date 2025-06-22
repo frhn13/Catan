@@ -1,10 +1,7 @@
 package Server;
 
 import Constants.GameState;
-import gameObjects.GameBoard;
-import gameObjects.Node;
-import gameObjects.Player;
-import gameObjects.Town;
+import gameObjects.*;
 
 import java.io.*;
 import java.net.*;
@@ -114,6 +111,7 @@ public class GameServer {
                     Object msg = dataIn.readObject();
 
                     if (msg instanceof String command) {
+                        Player newPlayer;
                         switch (command) {
                             case "NEW_PLAYER":
                                 allPlayers.add((Player) dataIn.readObject());
@@ -122,13 +120,28 @@ public class GameServer {
                             case "NEW_TOWN":
                                 GameBoard.setNodesDict((HashMap<ArrayList<Integer>, Node>) dataIn.readObject());
                                 GameBoard.setTownsDict((HashMap<ArrayList<Integer>, Town>) dataIn.readObject());
-                                Player newPlayer = (Player) dataIn.readObject();
+                                newPlayer = (Player) dataIn.readObject();
                                 for (int x=0; x<allPlayers.size(); x++) {
                                     if (allPlayers.get(x).getPlayerNumber() == newPlayer.getPlayerNumber()) {
                                         allPlayers.set(x, newPlayer);
                                     }
                                 }
                                 broadcastNewTown();
+                                break;
+                            case "NEW_ROAD":
+                                GameBoard.setRoadsDict((HashMap<ArrayList<ArrayList<Integer>>, Road>) dataIn.readObject());
+                                newPlayer = (Player) dataIn.readObject();
+                                for (int x=0; x<allPlayers.size(); x++) {
+                                    if (allPlayers.get(x).getPlayerNumber() == newPlayer.getPlayerNumber()) {
+                                        allPlayers.set(x, newPlayer);
+                                    }
+                                }
+                                broadcastNewRoad();
+                                break;
+                            case "NEW_TURN":
+                                GameBoard.setCurrentPlayerTurn(dataIn.readInt());
+                                System.out.println(GameBoard.getCurrentPlayerTurn());
+                                broadcastNewTurn();
                                 break;
                         }
                     }
@@ -158,9 +171,37 @@ public class GameServer {
                     ssc.dataOut.writeObject("NEW_TOWN_ADDED");
                     ssc.dataOut.writeObject(GameBoard.getNodesDict());
                     ssc.dataOut.writeObject(GameBoard.getTownsDict());
+                    ssc.dataOut.flush();
+                    System.out.println("broadcastNewRoad SSC");
                 }
             } catch (IOException e) {
                 System.out.println("IOException from broadcastNewTown() SSC");
+            }
+        }
+
+        public void broadcastNewRoad() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject("NEW_ROAD_ADDED");
+                    ssc.dataOut.writeObject(GameBoard.getRoadsDict());
+                    ssc.dataOut.flush();
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastNewRoad() SSC");
+            }
+            System.out.println("broadcastNewRoad SSC");
+        }
+
+        public void broadcastNewTurn() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject("NEW_TURN_ADDED");
+                    ssc.dataOut.writeInt(GameBoard.getCurrentPlayerTurn());
+                    ssc.dataOut.flush();
+                }
+                System.out.println("broadcastNewTurn SSC");
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastNewTurn() SSC");
             }
         }
     }
