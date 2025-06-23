@@ -3,6 +3,7 @@ package gameVisualisation;
 import Constants.GameState;
 import Constants.PlayerColour;
 import Constants.ResourceType;
+import Constants.SCMessages;
 import gameObjects.*;
 
 import javax.swing.*;
@@ -14,6 +15,8 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.*;
 
+import static Constants.CSMessages.*;
+import static Constants.SCMessages.*;
 import static Constants.Constants.*;
 
 
@@ -244,8 +247,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                     nodesDict.get(node).setHasSettlement(true);
                                     townsDict.put(newTown.getTownCoordinates(), newTown);
 
-                                    gameClient.addSettlement();
-
                                     if (currentPlayerTurn == player.getPlayerNumber()) {
                                         buildSettlementButton.setVisible(false);
                                         buildRoadButton.setVisible(true);
@@ -262,6 +263,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         }
                                         player.updatePlayerResourcesDict(newResources);
                                     }
+                                    gameClient.addSettlement();
                                     break;
                                 } else if (gameState == GameState.NORMAL_PLAY) {
                                     // Player currentPlayer = findCurrentPlayer();
@@ -359,7 +361,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                                         new ArrayList<>(Arrays.asList(endNodeCoordinates.getFirst(), endNodeCoordinates.getLast())))));
                                         player.updatePlayerRoadsDict(newRoad);
                                         roadsDict.put(newRoad.getRoadNodeCoordinates(), newRoad);
-                                        gameClient.addRoad();
                                         // GameBoard.updateRoadsDict(newRoad);
 
                                         HashMap<ResourceType, Integer> removedResources = new HashMap<>();
@@ -368,6 +369,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
                                         player.updatePlayerResourcesDict(removedResources);
                                         buildingNewRoad = false;
+                                        gameClient.addRoad();
                                         break outerLoop;
                                     }
                                 }
@@ -403,8 +405,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                             new ArrayList<>(Arrays.asList(nodeCoordinates.getFirst(), nodeCoordinates.getLast())))));
                                 player.updatePlayerRoadsDict(newRoad);
                                 roadsDict.put(newRoad.getRoadNodeCoordinates(), newRoad);
-                                //GameBoard.updateRoadsDict(newRoad);
-                                gameClient.addRoad();
 
                                 if (gameState == GameState.NORMAL_PLAY) {
                                     HashMap<ResourceType, Integer> removedResources = new HashMap<>();
@@ -413,19 +413,15 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                     player.updatePlayerResourcesDict(removedResources);
                                 }
 
+                                gameClient.addRoad();
+
                                 if (gameState == GameState.INITIAL_PLACEMENT) {
+                                    if (player.getInitialPlacements() >= 2 && player.getPlayerNumber() == 4)
+                                        gameClient.startNormalGame();
                                     currentPlayerTurn = player.getPlayerNumber() < 4 ? player.getPlayerNumber() + 1 : 1;
                                     buildRoadButton.setVisible(false);
                                     buildSettlementButton.setVisible(false);
                                     gameClient.updateTurn();
-                                    if (player.getInitialPlacements() >= 2 && player.getPlayerNumber() == 4) {
-                                        gameState = GameState.NORMAL_PLAY;
-                                        rollDiceButton.setVisible(true);
-                                        buildRoadButton.setVisible(false);
-                                        buildSettlementButton.setVisible(false);
-                                        upgradeSettlementButton.setVisible(false);
-                                        endTurnButton.setVisible(false);
-                                    }
                                 }
 
                                 buildingNewRoad = false;
@@ -443,7 +439,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 //                roadsDict = gameClient.getRoadsDict();
 //                tilesDict = gameClient.getTilesDict();
 //                gameState = gameClient.getGameState();
-                gamePanel.repaint();
+//                gamePanel.repaint();
 
                 System.out.println("BRICK: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK));
                 System.out.println("LUMBER: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER));
@@ -537,7 +533,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 int diceValue = diceRoll1 + diceRoll2;
 
                 Player currentPlayer = findCurrentPlayer();
-                HashMap<ArrayList<Integer>, Town> playerTownsDict = currentPlayer.getPlayerTownsDict();
+                HashMap<ArrayList<Integer>, Town> playerTownsDict = player.getPlayerTownsDict();
 
                 diceRollLabel.setVisible(true);
                 diceRollLabel.setText(String.valueOf(diceValue));
@@ -558,14 +554,17 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     }
                 }
 
-                rollDiceButton.setVisible(false);
-                buildRoadButton.setVisible(true);
-                buildSettlementButton.setVisible(true);
-                upgradeSettlementButton.setVisible(true);
-                endTurnButton.setVisible(true);
+                if (player.getPlayerNumber() == currentPlayerTurn) {
+                    rollDiceButton.setVisible(false);
+                    buildRoadButton.setVisible(true);
+                    buildSettlementButton.setVisible(true);
+                    upgradeSettlementButton.setVisible(true);
+                    endTurnButton.setVisible(true);
 
-                currentPlayer.updatePlayerResourcesDict(newResources);
-                gamePanel.repaint();
+                    player.updatePlayerResourcesDict(newResources);
+                    gameClient.updateResources();
+                    gamePanel.repaint();
+                }
             }
         });
 
@@ -575,8 +574,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 buildingNewSettlement = false;
                 upgradingToCity = false;
                 Player currentPlayer = findCurrentPlayer();
-                if ((currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER) >= 1 &&
-                currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK) >= 1) || gameState == GameState.INITIAL_PLACEMENT) {
+                if ((player.getPlayerResourcesDict().get(ResourceType.LUMBER) >= 1 &&
+                        player.getPlayerResourcesDict().get(ResourceType.BRICK) >= 1) || gameState == GameState.INITIAL_PLACEMENT) {
                     buildingNewRoad = !buildingNewRoad;
                 }
                 System.out.println(buildingNewRoad);
@@ -589,10 +588,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 upgradingToCity = false;
                 buildingNewRoad = false;
                 Player currentPlayer = findCurrentPlayer();
-                if ((currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER) >= 1 &&
-                        currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK) >= 1 &&
-                        currentPlayer.getPlayerResourcesDict().get(ResourceType.GRAIN) >= 1 &&
-                        currentPlayer.getPlayerResourcesDict().get(ResourceType.WOOL) >= 1) || gameState == GameState.INITIAL_PLACEMENT) {
+                if ((player.getPlayerResourcesDict().get(ResourceType.LUMBER) >= 1 &&
+                        player.getPlayerResourcesDict().get(ResourceType.BRICK) >= 1 &&
+                        player.getPlayerResourcesDict().get(ResourceType.GRAIN) >= 1 &&
+                        player.getPlayerResourcesDict().get(ResourceType.WOOL) >= 1) || gameState == GameState.INITIAL_PLACEMENT) {
                     buildingNewSettlement = !buildingNewSettlement;
                 }
                 System.out.println(buildingNewSettlement);
@@ -605,8 +604,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 buildingNewSettlement = false;
                 buildingNewRoad = false;
                 Player currentPlayer = findCurrentPlayer();
-                if (currentPlayer.getPlayerResourcesDict().get(ResourceType.GRAIN) >= 2 &&
-                currentPlayer.getPlayerResourcesDict().get(ResourceType.ORE) >= 3) {
+                if (player.getPlayerResourcesDict().get(ResourceType.GRAIN) >= 2 &&
+                player.getPlayerResourcesDict().get(ResourceType.ORE) >= 3) {
                     upgradingToCity = !upgradingToCity;
                 }
                 System.out.println(upgradingToCity);
@@ -620,17 +619,18 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 buildingNewRoad = false;
                 upgradingToCity = false;
 
-                rollDiceButton.setVisible(true);
+                rollDiceButton.setVisible(false);
                 buildRoadButton.setVisible(false);
                 buildSettlementButton.setVisible(false);
                 upgradeSettlementButton.setVisible(false);
                 endTurnButton.setVisible(false);
 
                 Player currentPlayer = findCurrentPlayer();
-                int nextTurn = currentPlayer.getPlayerNumber() < 4 ? currentPlayer.getPlayerNumber() + 1 : 1;
-                GameBoard.setCurrentPlayerTurn(nextTurn);
+                currentPlayerTurn = player.getPlayerNumber() < 4 ? player.getPlayerNumber() + 1 : 1;
+                gameClient.updateTurn();
+                //GameBoard.setCurrentPlayerTurn(nextTurn);
                 currentPlayer = findCurrentPlayer();
-                currentUserLabel.setText(String.valueOf(currentPlayer.getPlayerColour()).toLowerCase() + "'s Turn");
+                currentUserLabel.setText(String.valueOf(player.getPlayerColour()).toLowerCase() + "'s Turn");
                 gamePanel.repaint();
             }
         });
@@ -748,16 +748,15 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             player = new Player(playerColour, playerID);
             gameState = GameState.LOBBY;
 
-            csc.sendPlayer(player);
-            //csc.waitForStartSignal();
+            csc.sendPlayer();
             csc.listenForServerUpdates();
         }
 
-        public void addSettlement() {
-//            nodesDict = newNodes;
-//            townsDict = newTowns;
-//            player = newPlayer;
+        public void startNormalGame() {
+            csc.startNormalGame();
+        }
 
+        public void addSettlement() {
             csc.addSettlement();
         }
 
@@ -766,12 +765,15 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         }
 
         public void addRoad() {
-            System.out.println("addRoad");
             csc.addRoad();
         }
 
         public void updateTurn() {
             csc.updateTurn();
+        }
+
+        public void updateResources() {
+            csc.updateResources();
         }
 
         public class ClientSideConnection {
@@ -799,9 +801,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     throw new RuntimeException(e);
                 }
             }
-            public void sendPlayer(Player player) {
+
+            public void sendPlayer() {
                 try {
-                    dataOut.writeObject("NEW_PLAYER");
+                    dataOut.writeObject(NEW_PLAYER);
                     dataOut.writeObject(player);
                     dataOut.flush();
                     System.out.println("sendPlayer CSC");
@@ -810,9 +813,18 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 }
             }
 
+            public void startNormalGame() {
+                try {
+                    dataOut.writeObject(START_NORMAL_GAME);
+                    dataOut.flush();
+                } catch (IOException e) {
+                    System.out.println("IOException from startNormalGame() CSC");
+                }
+            }
+
             public void addSettlement() {
                 try {
-                    dataOut.writeObject("NEW_TOWN");
+                    dataOut.writeObject(NEW_TOWN);
                     dataOut.writeObject(nodesDict);
                     dataOut.writeObject(townsDict);
                     dataOut.writeObject(player);
@@ -830,7 +842,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
             public void addRoad() {
                 try {
-                    dataOut.writeObject("NEW_ROAD");
+                    dataOut.writeObject(NEW_ROAD);
                     dataOut.writeObject(roadsDict);
                     dataOut.writeObject(player);
                     dataOut.flush();
@@ -843,7 +855,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
             public void updateTurn() {
                 try {
-                    dataOut.writeObject("NEW_TURN");
+                    dataOut.writeObject(NEW_TURN);
                     dataOut.writeInt(currentPlayerTurn);
                     dataOut.flush();
                     System.out.println("updateTurn CSC");
@@ -852,30 +864,59 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 }
             }
 
+            public void updateResources() {
+                try {
+                    dataOut.writeObject(NEW_RESOURCES);
+                    dataOut.writeObject(player);
+                    dataOut.flush();
+                } catch (IOException e) {
+                    System.out.println("IOException occurred from updateResources() CSC");
+                }
+            }
+
             public void listenForServerUpdates() {
                 new Thread(() -> {
                     try {
                         while (true) {
                             Object msg = dataIn.readObject();
-                            if (msg instanceof String command) {
+                            if (msg instanceof SCMessages command) {
                                 switch (command) {
-                                    case "INITIAL_PLACEMENT":
+                                    case INITIAL_PLACEMENT, NORMAL_GAME_STARTED:
                                         gameState = (GameState) dataIn.readObject();
+                                        System.out.println(gameState);
                                         break;
-                                    case "NEW_TOWN_ADDED":
+                                    case NEW_TOWN_ADDED:
                                         nodesDict = (HashMap<ArrayList<Integer>, Node>) dataIn.readObject();
                                         townsDict = (HashMap<ArrayList<Integer>, Town>) dataIn.readObject();
                                         break;
-                                    case "NEW_ROAD_ADDED":
+                                    case NEW_ROAD_ADDED:
                                         roadsDict = (HashMap<ArrayList<ArrayList<Integer>>, Road>) dataIn.readObject();
                                         break;
-                                    case "NEW_TURN_ADDED":
+                                    case NEW_TURN_ADDED:
                                         currentPlayerTurn = dataIn.readInt();
                                         System.out.println(currentPlayerTurn);
                                         System.out.println(player.getPlayerNumber());
                                         if (currentPlayerTurn == player.getPlayerNumber()) {
                                             if (gameState == GameState.INITIAL_PLACEMENT) {
                                                 buildSettlementButton.setVisible(true);
+                                            }
+                                            if (gameState == GameState.NORMAL_PLAY) {
+                                                rollDiceButton.setVisible(true);
+                                                buildRoadButton.setVisible(false);
+                                                buildSettlementButton.setVisible(false);
+                                                upgradeSettlementButton.setVisible(false);
+                                                endTurnButton.setVisible(false);
+                                            }
+                                        }
+                                        break;
+                                    case NEW_RESOURCES_ADDED:
+                                        if (currentPlayerTurn == player.getPlayerNumber()) {
+                                            if (gameState == GameState.NORMAL_PLAY) {
+                                                rollDiceButton.setVisible(false);
+                                                buildRoadButton.setVisible(true);
+                                                buildSettlementButton.setVisible(true);
+                                                upgradeSettlementButton.setVisible(true);
+                                                endTurnButton.setVisible(true);
                                             }
                                         }
                                         break;

@@ -1,5 +1,6 @@
 package Server;
 
+import Constants.CSMessages;
 import Constants.GameState;
 import gameObjects.*;
 
@@ -8,6 +9,9 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import static Constants.CSMessages.*;
+import static Constants.SCMessages.*;
 
 public class GameServer {
 
@@ -100,24 +104,22 @@ public class GameServer {
                 // dataOut.writeObject(gameState);
                 dataOut.flush();
 
-//                Object obj = dataIn.readObject();
-//                if (obj instanceof Player player) {
-//                    allPlayers.add(player);
-//                    System.out.println("Received player: " + player.getPlayerNumber());
-//                }
-//                ready = true;
                 while (true) {
                     // receive move, apply to GameBoard, broadcast if needed
                     Object msg = dataIn.readObject();
 
-                    if (msg instanceof String command) {
+                    if (msg instanceof CSMessages command) {
                         Player newPlayer;
                         switch (command) {
-                            case "NEW_PLAYER":
+                            case NEW_PLAYER:
                                 allPlayers.add((Player) dataIn.readObject());
                                 ready = true;
                                 break;
-                            case "NEW_TOWN":
+                            case START_NORMAL_GAME:
+                                gameState = GameState.NORMAL_PLAY;
+                                broadcastNormalGame();
+                                break;
+                            case NEW_TOWN:
                                 GameBoard.setNodesDict((HashMap<ArrayList<Integer>, Node>) dataIn.readObject());
                                 GameBoard.setTownsDict((HashMap<ArrayList<Integer>, Town>) dataIn.readObject());
                                 newPlayer = (Player) dataIn.readObject();
@@ -128,7 +130,7 @@ public class GameServer {
                                 }
                                 broadcastNewTown();
                                 break;
-                            case "NEW_ROAD":
+                            case NEW_ROAD:
                                 GameBoard.setRoadsDict((HashMap<ArrayList<ArrayList<Integer>>, Road>) dataIn.readObject());
                                 newPlayer = (Player) dataIn.readObject();
                                 for (int x=0; x<allPlayers.size(); x++) {
@@ -138,7 +140,7 @@ public class GameServer {
                                 }
                                 broadcastNewRoad();
                                 break;
-                            case "NEW_TURN":
+                            case NEW_TURN:
                                 GameBoard.setCurrentPlayerTurn(dataIn.readInt());
                                 System.out.println(GameBoard.getCurrentPlayerTurn());
                                 broadcastNewTurn();
@@ -153,10 +155,11 @@ public class GameServer {
             }
         }
 
+
+
         public void startGame() {
             try {
-                System.out.println(gameState);
-                dataOut.writeObject("INITIAL_PLACEMENT");
+                dataOut.writeObject(INITIAL_PLACEMENT);
                 dataOut.writeObject(gameState);
                 dataOut.flush();
             } catch (IOException e) {
@@ -164,11 +167,22 @@ public class GameServer {
             }
         }
 
+        private void broadcastNormalGame() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(NORMAL_GAME_STARTED);
+                    ssc.dataOut.writeObject(gameState);
+                    ssc.dataOut.flush();
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastNormalGame() SSC");
+            }
+        }
+
         public void broadcastNewTown() {
             try {
-                System.out.println("Hey2");
                 for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
-                    ssc.dataOut.writeObject("NEW_TOWN_ADDED");
+                    ssc.dataOut.writeObject(NEW_TOWN_ADDED);
                     ssc.dataOut.writeObject(GameBoard.getNodesDict());
                     ssc.dataOut.writeObject(GameBoard.getTownsDict());
                     ssc.dataOut.flush();
@@ -182,7 +196,7 @@ public class GameServer {
         public void broadcastNewRoad() {
             try {
                 for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
-                    ssc.dataOut.writeObject("NEW_ROAD_ADDED");
+                    ssc.dataOut.writeObject(NEW_ROAD_ADDED);
                     ssc.dataOut.writeObject(GameBoard.getRoadsDict());
                     ssc.dataOut.flush();
                 }
@@ -195,7 +209,7 @@ public class GameServer {
         public void broadcastNewTurn() {
             try {
                 for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
-                    ssc.dataOut.writeObject("NEW_TURN_ADDED");
+                    ssc.dataOut.writeObject(NEW_TURN_ADDED);
                     ssc.dataOut.writeInt(GameBoard.getCurrentPlayerTurn());
                     ssc.dataOut.flush();
                 }
