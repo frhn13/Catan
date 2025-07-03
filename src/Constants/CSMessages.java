@@ -6,5 +6,6 @@ public enum CSMessages {
     NEW_ROAD,
     NEW_TURN,
     START_NORMAL_GAME,
-    NEW_RESOURCES
+    NEW_RESOURCES,
+    NEW_PLAYER_DETAILS
 }

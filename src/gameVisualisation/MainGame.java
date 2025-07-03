@@ -16,7 +16,6 @@ import java.net.Socket;
 import java.util.*;
 
 import static Constants.CSMessages.*;
-import static Constants.SCMessages.*;
 import static Constants.Constants.*;
 
 
@@ -28,7 +27,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     JButton upgradeSettlementButton;
     JButton endTurnButton;
     JLabel diceRollLabel;
-    JLabel currentUserScoreLabel;
+    JLabel currentUserScoreLabel = new JLabel();
     JLabel currentUserLabel;
 
     JPanel endgamePanel;
@@ -50,19 +49,22 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     GameClient gameClient = new GameClient();
 
     ArrayList<Player> players = GameBoard.getAllPlayers();
+    ArrayList<Player> allPlayers;
     HashMap<ArrayList<Integer>, Tile> tilesDict;
     HashMap<ArrayList<Integer>, Node> nodesDict;
     HashMap<ArrayList<Integer>, Town> townsDict;
     HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict;
     int currentPlayerTurn;
+    String currentPlayerColour;
+    int currentPlayerScore = 0;
 
     GameState gameState = GameState.INITIAL_PLACEMENT;
 
     public MainGame() {
         gameClient.connectToServer();
 
-        System.out.println(tilesDict);
-        System.out.println(nodesDict);
+//        System.out.println(tilesDict);
+//        System.out.println(nodesDict);
 
         System.out.println("Connected to server as Player #"+player.getPlayerNumber()+" with colour "+player.getPlayerColour()+".");
         // Post page panel code
@@ -113,8 +115,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
                 gameState = GameState.INITIAL_PLACEMENT;
                 Player currentPlayer = findCurrentPlayer();
-                currentUserScoreLabel.setText("Your Score: " + currentPlayer.getScore());
-                currentUserLabel.setText(String.valueOf(currentPlayer.getPlayerColour()).toLowerCase() + "'s Turn");
+                currentUserScoreLabel.setText("Their Score: " + currentPlayerScore);
+                currentUserLabel.setText(currentPlayerColour + "'s Turn");
                 diceRollLabel.setVisible(false);
                 startOfNewGame();
             }
@@ -264,6 +266,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         player.updatePlayerResourcesDict(newResources);
                                     }
                                     gameClient.addSettlement();
+
+                                    gameClient.getPlayerDetails();
                                     break;
                                 } else if (gameState == GameState.NORMAL_PLAY) {
                                     // Player currentPlayer = findCurrentPlayer();
@@ -289,6 +293,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                                 nodesDict.get(node).setHasSettlement(true);
                                                 townsDict.put(newTown.getTownCoordinates(), newTown);
                                                 gameClient.addSettlement();
+
+                                                gameClient.getPlayerDetails();
                                                 break outerLoop;
                                             }
                                         }
@@ -370,6 +376,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         player.updatePlayerResourcesDict(removedResources);
                                         buildingNewRoad = false;
                                         gameClient.addRoad();
+
+                                        gameClient.getPlayerDetails();
                                         break outerLoop;
                                     }
                                 }
@@ -425,14 +433,16 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                 }
 
                                 buildingNewRoad = false;
+
+                                gameClient.getPlayerDetails();
                                 break outerLoop;
                             }
                         }
                     }
                 }
                 Player currentPlayer = findCurrentPlayer();
-                currentUserScoreLabel.setText("Your Score: " + currentPlayer.getScore());
-                currentUserLabel.setText(String.valueOf(currentPlayer.getPlayerColour()).toLowerCase() + "'s Turn");
+//                currentUserScoreLabel.setText("Their Score: " + currentPlayerScore);
+//                currentUserLabel.setText(currentPlayerColour + "'s Turn");
 
 //                nodesDict = gameClient.getNodesDict();
 //                townsDict = gameClient.getTownsDict();
@@ -441,14 +451,14 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 //                gameState = gameClient.getGameState();
 //                gamePanel.repaint();
 
-                System.out.println("BRICK: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.BRICK));
-                System.out.println("LUMBER: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.LUMBER));
-                System.out.println("GRAIN: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.GRAIN));
-                System.out.println("WOOL: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.WOOL));
-                System.out.println("ORE: " + currentPlayer.getPlayerResourcesDict().get(ResourceType.ORE));
+                System.out.println("BRICK: " + player.getPlayerResourcesDict().get(ResourceType.BRICK));
+                System.out.println("LUMBER: " + player.getPlayerResourcesDict().get(ResourceType.LUMBER));
+                System.out.println("GRAIN: " + player.getPlayerResourcesDict().get(ResourceType.GRAIN));
+                System.out.println("WOOL: " + player.getPlayerResourcesDict().get(ResourceType.WOOL));
+                System.out.println("ORE: " + player.getPlayerResourcesDict().get(ResourceType.ORE));
                 System.out.println(gameState);
 
-                if (currentPlayer.getScore() >= WINNING_SCORE) {
+                if (player.getScore() >= WINNING_SCORE) {
                     gameState = GameState.ENDGAME;
                     endOfGame();
                 }
@@ -494,13 +504,13 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
           }
         };
 
-        currentUserScoreLabel = new JLabel("Your Score: 0") {
+        currentUserScoreLabel = new JLabel() {
             public void setBounds(int x, int y, int width, int height) {
                 super.setBounds(50, DEFAULT_GAME_HEIGHT - 300, 300, 100);
             }
         };
 
-        currentUserLabel = new JLabel(String.valueOf(currentPlayer.getPlayerColour()).toLowerCase() + "'s Turn") {
+        currentUserLabel = new JLabel() {
             public void setBounds(int x, int y, int width, int height) {
                 super.setBounds(50, DEFAULT_GAME_HEIGHT - 400, 300, 100);
             }
@@ -630,7 +640,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 gameClient.updateTurn();
                 //GameBoard.setCurrentPlayerTurn(nextTurn);
                 currentPlayer = findCurrentPlayer();
-                currentUserLabel.setText(String.valueOf(player.getPlayerColour()).toLowerCase() + "'s Turn");
+                currentUserLabel.setText(currentPlayerColour + "'s Turn");
                 gamePanel.repaint();
             }
         });
@@ -698,7 +708,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             if (player.getPlayerNumber() == GameBoard.getCurrentPlayerTurn())
                 return player;
         }
-        return players.getFirst();
+        return null;
     }
 
     public void endOfGame() {
@@ -776,6 +786,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             csc.updateResources();
         }
 
+        public void getPlayerDetails() {
+            csc.getPlayerDetails();
+        }
+
         public class ClientSideConnection {
             private Socket socket;
             private ObjectInputStream dataIn;
@@ -828,6 +842,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     dataOut.writeObject(nodesDict);
                     dataOut.writeObject(townsDict);
                     dataOut.writeObject(player);
+                    dataOut.writeInt(player.getScore());
                     dataOut.flush();
                     System.out.println("addSettlement CSC");
                 } catch (IOException e) {
@@ -874,6 +889,15 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 }
             }
 
+            public void getPlayerDetails() {
+                try {
+                    dataOut.writeObject(NEW_PLAYER_DETAILS);
+                    dataOut.flush();
+                } catch (IOException e) {
+                    System.out.println("IOException occurred from updatePlayerDetails() CSC");
+                }
+            }
+
             public void listenForServerUpdates() {
                 new Thread(() -> {
                     try {
@@ -894,8 +918,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         break;
                                     case NEW_TURN_ADDED:
                                         currentPlayerTurn = dataIn.readInt();
-                                        System.out.println(currentPlayerTurn);
-                                        System.out.println(player.getPlayerNumber());
                                         if (currentPlayerTurn == player.getPlayerNumber()) {
                                             if (gameState == GameState.INITIAL_PLACEMENT) {
                                                 buildSettlementButton.setVisible(true);
@@ -917,6 +939,24 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                                 buildSettlementButton.setVisible(true);
                                                 upgradeSettlementButton.setVisible(true);
                                                 endTurnButton.setVisible(true);
+                                            }
+                                        }
+                                        break;
+                                    case PLAYER_DETAILS_GOTTEN:
+                                        allPlayers = (ArrayList<Player>) dataIn.readObject();
+                                        for (Player currentPlayer : allPlayers) {
+                                            System.out.println(currentPlayer.getPlayerNumber());
+                                            System.out.println(currentPlayer.getPlayerColour());
+                                            System.out.println(currentPlayer.getScore());
+                                            System.out.println(currentPlayer.getPlayerTownsDict());
+                                            System.out.println(currentPlayer.getPlayerResourcesDict());
+                                            if (currentPlayerTurn == currentPlayer.getPlayerNumber()) {
+                                                currentPlayerColour = String.valueOf(currentPlayer.getPlayerColour());
+                                                currentPlayerScore = currentPlayer.getScore();
+                                                System.out.println("Current Player Turn: " + currentPlayerTurn);
+                                                System.out.println("Current Player Score: " + currentPlayer.getScore());
+                                                currentUserScoreLabel.setText("Their Score: " + currentPlayerScore);
+                                                currentUserLabel.setText(currentPlayerColour + "'s Turn");
                                             }
                                         }
                                         break;

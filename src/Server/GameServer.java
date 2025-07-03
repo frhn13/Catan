@@ -2,6 +2,7 @@ package Server;
 
 import Constants.CSMessages;
 import Constants.GameState;
+import Constants.PlayerColour;
 import gameObjects.*;
 
 import java.io.*;
@@ -19,6 +20,8 @@ public class GameServer {
     GameState gameState = GameState.LOBBY;
     private int numPlayers;
     private ArrayList<Player> allPlayers = new ArrayList<>();
+    private ArrayList<PlayerColour> allColours = new ArrayList<>();
+    private ArrayList<Integer> allScores = new ArrayList<>();
     private ServerSideConnection player1;
     private ServerSideConnection player2;
     private ServerSideConnection player3;
@@ -62,6 +65,10 @@ public class GameServer {
             player2.startGame();
             player3.startGame();
             player4.startGame();
+//            player1.sendPlayerDetails();
+//            player2.sendPlayerDetails();
+//            player3.sendPlayerDetails();
+//            player4.sendPlayerDetails();
             System.out.println("Now have 4 players. No longer accepting players");
 
         } catch (IOException e) {
@@ -112,7 +119,8 @@ public class GameServer {
                         Player newPlayer;
                         switch (command) {
                             case NEW_PLAYER:
-                                allPlayers.add((Player) dataIn.readObject());
+                                GameBoard.updatePlayers((Player) dataIn.readObject());
+                                // allPlayers.add((Player) dataIn.readObject());
                                 ready = true;
                                 break;
                             case START_NORMAL_GAME:
@@ -122,34 +130,45 @@ public class GameServer {
                             case NEW_TOWN:
                                 GameBoard.setNodesDict((HashMap<ArrayList<Integer>, Node>) dataIn.readObject());
                                 GameBoard.setTownsDict((HashMap<ArrayList<Integer>, Town>) dataIn.readObject());
+
                                 newPlayer = (Player) dataIn.readObject();
-                                for (int x=0; x<allPlayers.size(); x++) {
-                                    if (allPlayers.get(x).getPlayerNumber() == newPlayer.getPlayerNumber()) {
-                                        allPlayers.set(x, newPlayer);
-                                    }
-                                }
+                                GameBoard.updatePlayers(newPlayer);
+                                int newScore = dataIn.readInt();
+                                newPlayer.setScore(newScore);
+//                                System.out.println(newPlayer.getPlayerNumber());
+//                                System.out.println(newPlayer.getPlayerColour());
+//                                System.out.println(newPlayer.getScore());
+//                                for (int x=0; x<allPlayers.size(); x++) {
+//                                    if (allPlayers.get(x).getPlayerNumber() == newPlayer.getPlayerNumber()) {
+//                                        allPlayers.set(x, newPlayer);
+//                                    }
+//                                }
                                 broadcastNewTown();
                                 break;
                             case NEW_ROAD:
                                 GameBoard.setRoadsDict((HashMap<ArrayList<ArrayList<Integer>>, Road>) dataIn.readObject());
                                 newPlayer = (Player) dataIn.readObject();
-                                for (int x=0; x<allPlayers.size(); x++) {
-                                    if (allPlayers.get(x).getPlayerNumber() == newPlayer.getPlayerNumber()) {
-                                        allPlayers.set(x, newPlayer);
-                                    }
-                                }
+                                GameBoard.updatePlayers(newPlayer);
+//                                for (int x=0; x<allPlayers.size(); x++) {
+//                                    if (allPlayers.get(x).getPlayerNumber() == newPlayer.getPlayerNumber()) {
+//                                        allPlayers.set(x, newPlayer);
+//                                    }
+//                                }
                                 broadcastNewRoad();
                                 break;
                             case NEW_TURN:
                                 GameBoard.setCurrentPlayerTurn(dataIn.readInt());
-                                System.out.println(GameBoard.getCurrentPlayerTurn());
+                                System.out.println("Current Turn: " + GameBoard.getCurrentPlayerTurn());
                                 broadcastNewTurn();
+                                break;
+                            case NEW_PLAYER_DETAILS:
+                                broadcastPlayers();
                                 break;
                         }
                     }
                 }
             } catch (IOException e) {
-                System.out.println("IOException from run() SSC" + e.getMessage());
+                System.out.println("IOException from run() SSC " + e.getMessage());
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
@@ -185,8 +204,9 @@ public class GameServer {
                     ssc.dataOut.writeObject(NEW_TOWN_ADDED);
                     ssc.dataOut.writeObject(GameBoard.getNodesDict());
                     ssc.dataOut.writeObject(GameBoard.getTownsDict());
+                    //ssc.dataOut.writeObject(allPlayers);
                     ssc.dataOut.flush();
-                    System.out.println("broadcastNewRoad SSC");
+                    System.out.println("broadcastNewTown SSC");
                 }
             } catch (IOException e) {
                 System.out.println("IOException from broadcastNewTown() SSC");
@@ -198,6 +218,7 @@ public class GameServer {
                 for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
                     ssc.dataOut.writeObject(NEW_ROAD_ADDED);
                     ssc.dataOut.writeObject(GameBoard.getRoadsDict());
+                    //ssc.dataOut.writeObject(allPlayers);
                     ssc.dataOut.flush();
                 }
             } catch (IOException e) {
@@ -211,11 +232,34 @@ public class GameServer {
                 for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
                     ssc.dataOut.writeObject(NEW_TURN_ADDED);
                     ssc.dataOut.writeInt(GameBoard.getCurrentPlayerTurn());
+                    // ssc.dataOut.writeObject(allPlayers);
                     ssc.dataOut.flush();
                 }
                 System.out.println("broadcastNewTurn SSC");
             } catch (IOException e) {
                 System.out.println("IOException from broadcastNewTurn() SSC");
+            }
+        }
+
+        public void broadcastPlayers() {
+            try {
+                for (Player player : GameBoard.getAllPlayers()) {
+                    System.out.println(player.getPlayerNumber());
+                    System.out.println(player.getPlayerColour());
+                    System.out.println(player.getScore());
+                    System.out.println(player.getPlayerTownsDict());
+                }
+                System.out.println(GameBoard.getAllPlayers());
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(PLAYER_DETAILS_GOTTEN);
+                    ssc.dataOut.writeObject(GameBoard.getAllPlayers());
+                    ssc.dataOut.flush();
+                    //System.out.println(allScores.get(GameBoard.getCurrentPlayerTurn()-1));
+                    System.out.println("BroadcastPlayerDetails SSC");
+                }
+
+            } catch (IOException e) {
+                System.out.println("IOException from sendPlayerDetails() SSC");
             }
         }
     }

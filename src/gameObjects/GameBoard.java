@@ -76,6 +76,14 @@ public class GameBoard implements Serializable {
         GameBoard.allPlayers = allPlayers;
     }
 
+    public static void updatePlayers(Player player) {
+        try {
+            allPlayers.set(player.getPlayerNumber()-1, player);
+        } catch (Exception e) {
+            allPlayers.add(player);
+        }
+    }
+
     public static int getCurrentPlayerTurn() {
         return currentPlayerTurn;
     }
@@ -92,10 +100,10 @@ public class GameBoard implements Serializable {
         allPlayers = new ArrayList<>();
         currentPlayerTurn = 1;
 
-        allPlayers.add(new Player(PlayerColour.RED, 1));
-        allPlayers.add(new Player(PlayerColour.BLUE, 2));
-        allPlayers.add(new Player(PlayerColour.GREEN, 3));
-        allPlayers.add(new Player(PlayerColour.ORANGE, 4));
+//        allPlayers.add(new Player(PlayerColour.RED, 1));
+//        allPlayers.add(new Player(PlayerColour.BLUE, 2));
+//        allPlayers.add(new Player(PlayerColour.GREEN, 3));
+//        allPlayers.add(new Player(PlayerColour.ORANGE, 4));
 
         ResourceType[] resourceTypes = new ResourceType[] {ResourceType.LUMBER,
                 ResourceType.GRAIN, ResourceType.WOOL, ResourceType.BRICK, ResourceType.ORE, ResourceType.DESERT};
