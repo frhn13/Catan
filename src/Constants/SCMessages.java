@@ -3,9 +3,9 @@ package Constants;
 public enum SCMessages {
     INITIAL_PLACEMENT,
     NEW_TOWN_ADDED,
+    NEW_CITY_ADDED,
     NEW_ROAD_ADDED,
     NEW_TURN_ADDED,
     NORMAL_GAME_STARTED,
     NEW_RESOURCES_ADDED,
-    PLAYER_DETAILS_GOTTEN
 }

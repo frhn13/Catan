@@ -132,6 +132,12 @@ public class GameServer {
                                 GameBoard.updatePlayers(newPlayer);
                                 broadcastNewTown();
                                 break;
+                            case NEW_CITY:
+                                GameBoard.setTownsDict((HashMap<ArrayList<Integer>, Town>) dataIn.readObject());
+                                newPlayer = (Player) dataIn.readObject();
+                                GameBoard.updatePlayers(newPlayer);
+                                broadcastNewCity();
+                                break;
                             case NEW_ROAD:
                                 GameBoard.setRoadsDict((HashMap<ArrayList<ArrayList<Integer>>, Road>) dataIn.readObject());
                                 newPlayer = (Player) dataIn.readObject();
@@ -194,6 +200,24 @@ public class GameServer {
                 }
             } catch (IOException e) {
                 System.out.println("IOException from broadcastNewTown() SSC");
+            }
+        }
+
+        public void broadcastNewCity() {
+            try {
+                for (Player player : GameBoard.getAllPlayers()) {
+                    System.out.println("Number: " + player.getPlayerNumber() + " Colour: " + player.getPlayerColour() + " Score: " + player.getScore() + " Towns: " + player.getPlayerTownsDict());
+                }
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(NEW_CITY_ADDED);
+                    ssc.dataOut.writeObject(GameBoard.getTownsDict());
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(GameBoard.getAllPlayers());
+                    ssc.dataOut.flush();
+                    System.out.println("broadcastNewCity SSC");
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastNewCity() SSC");
             }
         }
 
