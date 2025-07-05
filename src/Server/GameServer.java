@@ -8,6 +8,7 @@ import gameObjects.*;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -65,10 +66,6 @@ public class GameServer {
             player2.startGame();
             player3.startGame();
             player4.startGame();
-//            player1.sendPlayerDetails();
-//            player2.sendPlayerDetails();
-//            player3.sendPlayerDetails();
-//            player4.sendPlayerDetails();
             System.out.println("Now have 4 players. No longer accepting players");
 
         } catch (IOException e) {
@@ -133,36 +130,18 @@ public class GameServer {
 
                                 newPlayer = (Player) dataIn.readObject();
                                 GameBoard.updatePlayers(newPlayer);
-                                int newScore = dataIn.readInt();
-                                newPlayer.setScore(newScore);
-//                                System.out.println(newPlayer.getPlayerNumber());
-//                                System.out.println(newPlayer.getPlayerColour());
-//                                System.out.println(newPlayer.getScore());
-//                                for (int x=0; x<allPlayers.size(); x++) {
-//                                    if (allPlayers.get(x).getPlayerNumber() == newPlayer.getPlayerNumber()) {
-//                                        allPlayers.set(x, newPlayer);
-//                                    }
-//                                }
                                 broadcastNewTown();
                                 break;
                             case NEW_ROAD:
                                 GameBoard.setRoadsDict((HashMap<ArrayList<ArrayList<Integer>>, Road>) dataIn.readObject());
                                 newPlayer = (Player) dataIn.readObject();
                                 GameBoard.updatePlayers(newPlayer);
-//                                for (int x=0; x<allPlayers.size(); x++) {
-//                                    if (allPlayers.get(x).getPlayerNumber() == newPlayer.getPlayerNumber()) {
-//                                        allPlayers.set(x, newPlayer);
-//                                    }
-//                                }
                                 broadcastNewRoad();
                                 break;
                             case NEW_TURN:
                                 GameBoard.setCurrentPlayerTurn(dataIn.readInt());
                                 System.out.println("Current Turn: " + GameBoard.getCurrentPlayerTurn());
                                 broadcastNewTurn();
-                                break;
-                            case NEW_PLAYER_DETAILS:
-                                broadcastPlayers();
                                 break;
                         }
                     }
@@ -191,6 +170,7 @@ public class GameServer {
                 for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
                     ssc.dataOut.writeObject(NORMAL_GAME_STARTED);
                     ssc.dataOut.writeObject(gameState);
+                    //ssc.dataOut.writeObject(GameBoard.getAllPlayers());
                     ssc.dataOut.flush();
                 }
             } catch (IOException e) {
@@ -200,11 +180,15 @@ public class GameServer {
 
         public void broadcastNewTown() {
             try {
+                for (Player player : GameBoard.getAllPlayers()) {
+                    System.out.println("Number: " + player.getPlayerNumber() + " Colour: " + player.getPlayerColour() + " Score: " + player.getScore() + " Towns: " + player.getPlayerTownsDict());
+                }
                 for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
                     ssc.dataOut.writeObject(NEW_TOWN_ADDED);
                     ssc.dataOut.writeObject(GameBoard.getNodesDict());
                     ssc.dataOut.writeObject(GameBoard.getTownsDict());
-                    //ssc.dataOut.writeObject(allPlayers);
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(GameBoard.getAllPlayers());
                     ssc.dataOut.flush();
                     System.out.println("broadcastNewTown SSC");
                 }
@@ -215,10 +199,14 @@ public class GameServer {
 
         public void broadcastNewRoad() {
             try {
+                for (Player player : GameBoard.getAllPlayers()) {
+                    System.out.println("Number: " + player.getPlayerNumber() + " Colour: " + player.getPlayerColour() + " Score: " + player.getScore() + " Towns: " + player.getPlayerTownsDict());
+                }
                 for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
                     ssc.dataOut.writeObject(NEW_ROAD_ADDED);
                     ssc.dataOut.writeObject(GameBoard.getRoadsDict());
-                    //ssc.dataOut.writeObject(allPlayers);
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(GameBoard.getAllPlayers());
                     ssc.dataOut.flush();
                 }
             } catch (IOException e) {
@@ -229,37 +217,19 @@ public class GameServer {
 
         public void broadcastNewTurn() {
             try {
+                for (Player player : GameBoard.getAllPlayers()) {
+                    System.out.println("Number: " + player.getPlayerNumber() + " Colour: " + player.getPlayerColour() + " Score: " + player.getScore() + " Towns: " + player.getPlayerTownsDict());
+                }
                 for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
                     ssc.dataOut.writeObject(NEW_TURN_ADDED);
                     ssc.dataOut.writeInt(GameBoard.getCurrentPlayerTurn());
-                    // ssc.dataOut.writeObject(allPlayers);
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(GameBoard.getAllPlayers());
                     ssc.dataOut.flush();
                 }
                 System.out.println("broadcastNewTurn SSC");
             } catch (IOException e) {
                 System.out.println("IOException from broadcastNewTurn() SSC");
-            }
-        }
-
-        public void broadcastPlayers() {
-            try {
-                for (Player player : GameBoard.getAllPlayers()) {
-                    System.out.println(player.getPlayerNumber());
-                    System.out.println(player.getPlayerColour());
-                    System.out.println(player.getScore());
-                    System.out.println(player.getPlayerTownsDict());
-                }
-                System.out.println(GameBoard.getAllPlayers());
-                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
-                    ssc.dataOut.writeObject(PLAYER_DETAILS_GOTTEN);
-                    ssc.dataOut.writeObject(GameBoard.getAllPlayers());
-                    ssc.dataOut.flush();
-                    //System.out.println(allScores.get(GameBoard.getCurrentPlayerTurn()-1));
-                    System.out.println("BroadcastPlayerDetails SSC");
-                }
-
-            } catch (IOException e) {
-                System.out.println("IOException from sendPlayerDetails() SSC");
             }
         }
     }

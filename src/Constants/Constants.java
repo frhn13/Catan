@@ -15,6 +15,7 @@ public class Constants {
 
     public static final Font DICE_ROLL_FONT = new Font("MV Boli", Font.PLAIN, 50);
     public static final Font SCORE_FONT = new Font("MV Boli", Font.PLAIN, 30);
+    public static final Font OTHER_SCORE_FONT = new Font("MV Boli", Font.PLAIN, 20);
 
     public static final int TOTAL_INITIAL_PLACEMENTS = 2;
     public static final int WINNING_SCORE = 10;
