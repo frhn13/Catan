@@ -60,16 +60,11 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     HashMap<ArrayList<Integer>, Town> townsDict;
     HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict;
     int currentPlayerTurn;
-    String currentPlayerColour;
-    int currentPlayerScore = 0;
 
     GameState gameState = GameState.INITIAL_PLACEMENT;
 
     public MainGame() {
         gameClient.connectToServer();
-
-//        System.out.println(tilesDict);
-//        System.out.println(nodesDict);
 
         System.out.println("Connected to server as Player #"+player.getPlayerNumber()+" with colour "+player.getPlayerColour()+".");
         // Post page panel code
@@ -106,7 +101,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         newGameButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                GameBoard.resetGameBoard();
+                gameClient.resetGame();
 
                 buildingNewSettlement = false;
                 upgradingToCity = false;
@@ -119,9 +114,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 roadsDict = GameBoard.getRoadsDict();
 
                 gameState = GameState.INITIAL_PLACEMENT;
-                Player currentPlayer = findCurrentPlayer();
-                thisPlayerScoreLabel.setText("Their Score: " + currentPlayerScore);
-                thisPlayerLabel.setText(currentPlayerColour + "'s Turn");
+//                thisPlayerScoreLabel.setText("Their Score: " + player.getScore());
+//                thisPlayerLabel.setText(player.getPlayerColour() + "'s Turn");
                 diceRollLabel.setVisible(false);
                 startOfNewGame();
             }
@@ -160,7 +154,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     try {
                         Image tileImg = new ImageIcon(Objects.requireNonNull(getClass().getResource("/Images/gameTiles/" + tilesDict.get(tile).getTileResource().tileImage))).getImage();
                         g.drawImage(tileImg, tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x, tilesDict.get(tile).getTileCoordinates().getLast() * 150 + 50, TILE_WIDTH, TILE_HEIGHT, null);
-                        //g.fillRect(tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x, tilesDict.get(tile).getTileCoordinates().getLast() * 200 + 50, 100, 100);
                         g.setFont(new Font("Arial", Font.BOLD, 50));
                         g.setColor(Color.white);
                         g.drawString(String.valueOf(tilesDict.get(tile).getRollValue()), tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x + 80, tilesDict.get(tile).getTileCoordinates().getLast() * 150 + 150);
@@ -448,7 +441,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
                 if (player.getScore() >= WINNING_SCORE) {
                     gameState = GameState.ENDGAME;
-                    endOfGame();
+                    gameClient.endGame();
                 }
                 System.out.println();
             }
@@ -654,9 +647,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 Player currentPlayer = findCurrentPlayer();
                 currentPlayerTurn = player.getPlayerNumber() < 4 ? player.getPlayerNumber() + 1 : 1;
                 gameClient.updateTurn();
-                //GameBoard.setCurrentPlayerTurn(nextTurn);
-                currentPlayer = findCurrentPlayer();
-                thisPlayerLabel.setText(currentPlayerColour + "'s Turn");
                 gamePanel.repaint();
             }
         });
@@ -724,9 +714,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     }
 
     public Player findCurrentPlayer() {
-        for (Player player : players) {
-            if (player.getPlayerNumber() == GameBoard.getCurrentPlayerTurn())
-                return player;
+        for (Player currentPlayer : players) {
+            if (currentPlayer.getPlayerNumber() == GameBoard.getCurrentPlayerTurn())
+                return currentPlayer;
         }
         return null;
     }
@@ -735,16 +725,16 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         finalScores.append("Final Score: ");
         finalSettlements.append("Number of Settlements: ");
         finalCities.append("Number of Cities: ");
-        for (Player player : players) {
-            finalScores.append(player.getPlayerColour()).append(": ").append(player.getScore()).append(" ");
+        for (Player currentPlayer : allPlayers) {
+            finalScores.append(currentPlayer.getPlayerColour()).append(": ").append(currentPlayer.getScore()).append(" ");
             int noSettlements = 0;
             int noCities = 0;
-            for (Town town : player.getPlayerTownsDict().values()) {
+            for (Town town : currentPlayer.getPlayerTownsDict().values()) {
                 if (town.isCity()) noCities++;
                 else noSettlements++;
             }
-            finalSettlements.append(player.getPlayerColour()).append(": ").append(noSettlements).append(" ");
-            finalCities.append(player.getPlayerColour()).append(": ").append(noCities).append(" ");
+            finalSettlements.append(currentPlayer.getPlayerColour()).append(": ").append(noSettlements).append(" ");
+            finalCities.append(currentPlayer.getPlayerColour()).append(": ").append(noCities).append(" ");
         }
 
         scoresLabel.setText(String.valueOf(finalScores));
@@ -804,6 +794,14 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
         public void updateResources() {
             csc.updateResources();
+        }
+
+        public void endGame() {
+            csc.endGame();
+        }
+
+        public void resetGame() {
+            csc.resetGame();
         }
 
         public class ClientSideConnection {
@@ -914,6 +912,25 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 }
             }
 
+            public void endGame() {
+                try {
+                    dataOut.writeObject(END_GAME);
+                    dataOut.reset();
+                    dataOut.writeObject(player);
+                    dataOut.flush();
+                } catch (IOException e) {
+                    System.out.println("IOException occurred from endGame() CSC");
+                }
+            }
+
+            public void resetGame() {
+                try {
+                    dataOut.writeObject(NEW_GAME);
+                } catch (IOException e) {
+                    System.out.println("IOException occurred from resetGame() CSC");
+                }
+            }
+
             public void listenForServerUpdates() {
                 new Thread(() -> {
                     try {
@@ -970,6 +987,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         allPlayers = (ArrayList<Player>) dataIn.readObject();
                                         displayUserStats();
                                         break;
+                                    case END_GAME_ADDED:
+                                        gameState = (GameState) dataIn.readObject();
+                                        allPlayers = (ArrayList<Player>) dataIn.readObject();
+                                        endOfGame();
                                 }
                                 repaint();
                             }
@@ -983,14 +1004,12 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             public void displayUserStats() {
                 int counter = 0;
                 for (Player currentPlayer : allPlayers) {
-                    if (player.getPlayerNumber() == currentPlayer.getPlayerNumber()) {
-                        currentPlayerColour = String.valueOf(currentPlayer.getPlayerColour());
-                        currentPlayerScore = currentPlayer.getScore();
-                        thisPlayerScoreLabel.setText("Your Score: " + currentPlayer.getScore());
-                        thisPlayerLabel.setText("Your Colour: " + currentPlayer.getPlayerColour());
-                    }
                     if (currentPlayerTurn == currentPlayer.getPlayerNumber()) {
                         currentPlayerLabel.setText("Current Player: " + currentPlayer.getPlayerColour());
+                    }
+                    if (player.getPlayerNumber() == currentPlayer.getPlayerNumber()) {
+                        thisPlayerScoreLabel.setText("Your Score: " + currentPlayer.getScore());
+                        thisPlayerLabel.setText("Your Colour: " + currentPlayer.getPlayerColour());
                     }
                     else {
                         switch (counter) {

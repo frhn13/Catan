@@ -8,4 +8,6 @@ public enum SCMessages {
     NEW_TURN_ADDED,
     NORMAL_GAME_STARTED,
     NEW_RESOURCES_ADDED,
+    END_GAME_ADDED,
+    NEW_GAME_ADDED
 }

@@ -8,4 +8,6 @@ public enum CSMessages {
     NEW_TURN,
     START_NORMAL_GAME,
     NEW_RESOURCES,
+    END_GAME,
+    NEW_GAME
 }

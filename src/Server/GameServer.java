@@ -21,8 +21,6 @@ public class GameServer {
     GameState gameState = GameState.LOBBY;
     private int numPlayers;
     private ArrayList<Player> allPlayers = new ArrayList<>();
-    private ArrayList<PlayerColour> allColours = new ArrayList<>();
-    private ArrayList<Integer> allScores = new ArrayList<>();
     private ServerSideConnection player1;
     private ServerSideConnection player2;
     private ServerSideConnection player3;
@@ -149,6 +147,13 @@ public class GameServer {
                                 System.out.println("Current Turn: " + GameBoard.getCurrentPlayerTurn());
                                 broadcastNewTurn();
                                 break;
+                            case END_GAME:
+                                gameState = GameState.ENDGAME;
+                                broadcastEndGame();
+                                break;
+                            case NEW_GAME:
+                                GameBoard.resetGameBoard();
+                                break;
                         }
                     }
                 }
@@ -254,6 +259,20 @@ public class GameServer {
                 System.out.println("broadcastNewTurn SSC");
             } catch (IOException e) {
                 System.out.println("IOException from broadcastNewTurn() SSC");
+            }
+        }
+
+        public void broadcastEndGame() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(END_GAME_ADDED);
+                    ssc.dataOut.writeObject(gameState);
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(GameBoard.getAllPlayers());
+                    ssc.dataOut.flush();
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastEndGame() SSC");
             }
         }
     }
