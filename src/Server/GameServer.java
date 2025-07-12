@@ -7,10 +7,7 @@ import gameObjects.*;
 
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static Constants.CSMessages.*;
 import static Constants.SCMessages.*;
@@ -21,6 +18,7 @@ public class GameServer {
     GameState gameState = GameState.LOBBY;
     private int numPlayers;
     private ArrayList<Player> allPlayers = new ArrayList<>();
+    private HashSet<Integer> resetList = new HashSet<>();
     private ServerSideConnection player1;
     private ServerSideConnection player2;
     private ServerSideConnection player3;
@@ -82,6 +80,9 @@ public class GameServer {
 
         public boolean isReady() {
             return ready;
+        }
+        public void setReady(boolean ready) {
+            this.ready = ready;
         }
 
         public ServerSideConnection(Socket s, int id) {
@@ -152,7 +153,13 @@ public class GameServer {
                                 broadcastEndGame();
                                 break;
                             case NEW_GAME:
-                                GameBoard.resetGameBoard();
+                                newPlayer = (Player) dataIn.readObject();
+                                resetList.add(newPlayer.getPlayerNumber());
+                                if (resetList.size() >= 4) {
+                                    gameState = GameState.LOBBY;
+                                    GameBoard.resetGameBoard();
+                                    resetPlayers();
+                                }
                                 break;
                         }
                     }
@@ -270,9 +277,29 @@ public class GameServer {
                     ssc.dataOut.reset();
                     ssc.dataOut.writeObject(GameBoard.getAllPlayers());
                     ssc.dataOut.flush();
+                    ssc.setReady(false);
                 }
             } catch (IOException e) {
                 System.out.println("IOException from broadcastEndGame() SSC");
+            }
+        }
+
+        public void resetPlayers() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(RESET_PLAYERS);
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(GameState.INITIAL_PLACEMENT);
+                    ssc.dataOut.writeObject(GameBoard.getTilesDict());
+                    ssc.dataOut.writeObject(GameBoard.getNodesDict());
+                    ssc.dataOut.writeObject(GameBoard.getTownsDict());
+                    ssc.dataOut.writeObject(GameBoard.getRoadsDict());
+                    ssc.dataOut.writeInt(GameBoard.getCurrentPlayerTurn());
+                    ssc.dataOut.flush();
+                    ssc.setReady(true);
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from resetPlayers() SSC");
             }
         }
     }

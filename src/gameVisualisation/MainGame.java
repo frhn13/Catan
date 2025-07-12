@@ -40,6 +40,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     JLabel numberOfSettlementsLabel;
     JLabel numberOfCitiesLabel;
     JButton newGameButton;
+    JLabel waitingLabel;
 
     int diceValue;
     boolean buildingNewSettlement = false;
@@ -88,6 +89,12 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
         };
 
+        waitingLabel = new JLabel("Waiting for other players...") {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(DEFAULT_GAME_WIDTH / 2 - 100, DEFAULT_GAME_HEIGHT - 200, 1000, 400);
+            }
+        };
+
         scoresLabel.setFont(SCORE_FONT);
         numberOfSettlementsLabel.setFont(SCORE_FONT);
         numberOfCitiesLabel.setFont(SCORE_FONT);
@@ -107,17 +114,15 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 upgradingToCity = false;
                 buildingNewRoad = false;
 
-                players = GameBoard.getAllPlayers();
-                tilesDict = GameBoard.getTilesDict();
-                nodesDict = GameBoard.getNodesDict();
-                townsDict = GameBoard.getTownsDict();
-                roadsDict = GameBoard.getRoadsDict();
+//                players = GameBoard.getAllPlayers();
+//                tilesDict = GameBoard.getTilesDict();
+//                nodesDict = GameBoard.getNodesDict();
+//                townsDict = GameBoard.getTownsDict();
+//                roadsDict = GameBoard.getRoadsDict();
 
                 gameState = GameState.INITIAL_PLACEMENT;
-//                thisPlayerScoreLabel.setText("Their Score: " + player.getScore());
-//                thisPlayerLabel.setText(player.getPlayerColour() + "'s Turn");
-                diceRollLabel.setVisible(false);
-                startOfNewGame();
+//                diceRollLabel.setVisible(false);
+                newGameButton.setVisible(false);
             }
         });
 
@@ -125,6 +130,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         endgamePanel.add(numberOfSettlementsLabel);
         endgamePanel.add(numberOfCitiesLabel);
         endgamePanel.add(newGameButton);
+        endgamePanel.add(waitingLabel);
+        waitingLabel.setVisible(false);
 
         // Code for panel during the game
         gamePanel = new JPanel() {
@@ -741,6 +748,14 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         numberOfSettlementsLabel.setText(String.valueOf(finalSettlements));
         numberOfCitiesLabel.setText(String.valueOf(finalCities));
 
+        diceRollLabel.setText("");
+        thisPlayerScoreLabel.setText("");
+        thisPlayerLabel.setText("");
+        currentPlayerLabel.setText("");
+        player1Label.setText("");
+        player2Label.setText("");
+        player3Label.setText("");
+
         this.add(endgamePanel);
         this.remove(gamePanel);
         this.repaint();
@@ -750,6 +765,17 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         this.add(gamePanel);
         this.remove(endgamePanel);
         this.repaint();
+
+        buildSettlementButton.setVisible(false);
+        buildRoadButton.setVisible(false);
+        rollDiceButton.setVisible(false);
+        upgradeSettlementButton.setVisible(false);
+        endTurnButton.setVisible(false);
+        diceRollLabel.setVisible(false);
+
+        if (currentPlayerTurn == player.getPlayerNumber()) {
+            buildSettlementButton.setVisible(true);
+        }
     }
 
     public class GameClient {
@@ -926,6 +952,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             public void resetGame() {
                 try {
                     dataOut.writeObject(NEW_GAME);
+                    dataOut.reset();
+                    dataOut.writeObject(player);
+                    dataOut.flush();
                 } catch (IOException e) {
                     System.out.println("IOException occurred from resetGame() CSC");
                 }
@@ -991,6 +1020,18 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         gameState = (GameState) dataIn.readObject();
                                         allPlayers = (ArrayList<Player>) dataIn.readObject();
                                         endOfGame();
+                                        break;
+                                    case RESET_PLAYERS:
+                                        gameState = (GameState) dataIn.readObject();
+                                        tilesDict = (HashMap<ArrayList<Integer>, Tile>) dataIn.readObject();
+                                        nodesDict = (HashMap<ArrayList<Integer>, Node>) dataIn.readObject();
+                                        townsDict = (HashMap<ArrayList<Integer>, Town>) dataIn.readObject();
+                                        roadsDict = (HashMap<ArrayList<ArrayList<Integer>>, Road>) dataIn.readObject();
+                                        currentPlayerTurn = dataIn.readInt();
+                                        player = new Player(player.getPlayerColour(), player.getPlayerNumber());
+                                        sendPlayer();
+                                        startOfNewGame();
+                                        break;
                                 }
                                 repaint();
                             }

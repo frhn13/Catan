@@ -9,5 +9,6 @@ public enum SCMessages {
     NORMAL_GAME_STARTED,
     NEW_RESOURCES_ADDED,
     END_GAME_ADDED,
+    RESET_PLAYERS,
     NEW_GAME_ADDED
 }
