@@ -25,6 +25,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     JButton buildRoadButton;
     JButton buildSettlementButton;
     JButton upgradeSettlementButton;
+    JButton tradeButton;
     JButton endTurnButton;
     JLabel diceRollLabel;
 
@@ -114,15 +115,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 upgradingToCity = false;
                 buildingNewRoad = false;
 
-//                players = GameBoard.getAllPlayers();
-//                tilesDict = GameBoard.getTilesDict();
-//                nodesDict = GameBoard.getNodesDict();
-//                townsDict = GameBoard.getTownsDict();
-//                roadsDict = GameBoard.getRoadsDict();
-
                 gameState = GameState.INITIAL_PLACEMENT;
-//                diceRollLabel.setVisible(false);
                 newGameButton.setVisible(false);
+                waitingLabel.setVisible(true);
             }
         });
 
@@ -154,16 +149,16 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 int base_x;
                 for (ArrayList<Integer> tile : tilesDict.keySet()) {
                     base_x = switch (tilesDict.get(tile).getTileCoordinates().getLast()) {
-                        case 0, 4 -> 300;
-                        case 1, 3 -> 200;
-                        default -> 100;
+                        case 0, 4 -> 450;
+                        case 1, 3 -> 400;
+                        default -> 350;
                     };
                     try {
                         Image tileImg = new ImageIcon(Objects.requireNonNull(getClass().getResource("/Images/gameTiles/" + tilesDict.get(tile).getTileResource().tileImage))).getImage();
-                        g.drawImage(tileImg, tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x, tilesDict.get(tile).getTileCoordinates().getLast() * 150 + 50, TILE_WIDTH, TILE_HEIGHT, null);
-                        g.setFont(new Font("Arial", Font.BOLD, 50));
+                        g.drawImage(tileImg, tilesDict.get(tile).getTileCoordinates().getFirst() * TILE_WIDTH + base_x, tilesDict.get(tile).getTileCoordinates().getLast() * 75 + 50, TILE_WIDTH, TILE_HEIGHT, null);
+                        g.setFont(new Font("Arial", Font.BOLD, 30));
                         g.setColor(Color.white);
-                        g.drawString(String.valueOf(tilesDict.get(tile).getRollValue()), tilesDict.get(tile).getTileCoordinates().getFirst() * 200 + base_x + 80, tilesDict.get(tile).getTileCoordinates().getLast() * 150 + 150);
+                        g.drawString(String.valueOf(tilesDict.get(tile).getRollValue()), tilesDict.get(tile).getTileCoordinates().getFirst() * TILE_WIDTH + base_x + 40, tilesDict.get(tile).getTileCoordinates().getLast() * 75 + 110);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -171,36 +166,36 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
                 for (ArrayList<Integer> node : nodesDict.keySet()) {
                     base_x = switch (nodesDict.get(node).getNodeCoordinates().getLast()) {
-                        case 0, 11 -> 400;
-                        case 1, 2, 9, 10 -> 300;
-                        case 3, 4, 7, 8 -> 200;
-                        default -> 100;
+                        case 0, 11 -> 500;
+                        case 1, 2, 9, 10 -> 450;
+                        case 3, 4, 7, 8 -> 400;
+                        default -> 350;
                     };
                     int y_pos = switch (nodesDict.get(node).getNodeCoordinates().getLast()) {
                         case 0 -> 50;
-                        case 1 -> 100;
-                        case 2 -> 200;
-                        case 3 -> 250;
-                        case 4 -> 350;
-                        case 5 -> 400;
-                        case 6 -> 500;
-                        case 7 -> 550;
-                        case 8 -> 650;
-                        case 9 -> 700;
-                        case 10 -> 800;
-                        default -> 850;
+                        case 1 -> 75;
+                        case 2 -> 125;
+                        case 3 -> 150;
+                        case 4 -> 200;
+                        case 5 -> 225;
+                        case 6 -> 275;
+                        case 7 -> 300;
+                        case 8 -> 350;
+                        case 9 -> 375;
+                        case 10 -> 425;
+                        default -> 450;
                     };
                     g.setColor(Color.BLACK);
-                    g.fillOval(nodesDict.get(node).getNodeCoordinates().getFirst() * 200 + base_x - 10, y_pos - 10, 20, 20);
-                    nodesDict.get(node).setNodeBoardCoordinates(new ArrayList<>(Arrays.asList(nodesDict.get(node).getNodeCoordinates().getFirst() * 200 + base_x - 10, y_pos - 10)));
+                    g.fillOval(nodesDict.get(node).getNodeCoordinates().getFirst() * TILE_WIDTH + base_x - 5, y_pos - 5, 10, 10);
+                    nodesDict.get(node).setNodeBoardCoordinates(new ArrayList<>(Arrays.asList(nodesDict.get(node).getNodeCoordinates().getFirst() * TILE_WIDTH + base_x - 5, y_pos - 5)));
                 }
 
                 for (ArrayList<Integer> town : townsDict.keySet()) {
                     g.setColor(townsDict.get(town).getTownColour().colour);
                     if (townsDict.get(town).isCity())
-                        g.fillRect(townsDict.get(town).getTownBoardCoordinates().getFirst(), townsDict.get(town).getTownBoardCoordinates().getLast(), 20, 20);
+                        g.fillRect(townsDict.get(town).getTownBoardCoordinates().getFirst(), townsDict.get(town).getTownBoardCoordinates().getLast(), 10, 10);
                     else
-                        g.fillOval(townsDict.get(town).getTownBoardCoordinates().getFirst(), townsDict.get(town).getTownBoardCoordinates().getLast(), 20, 20);
+                        g.fillOval(townsDict.get(town).getTownBoardCoordinates().getFirst(), townsDict.get(town).getTownBoardCoordinates().getLast(), 10, 10);
                 }
 
                 for (ArrayList<ArrayList<Integer>> road : roadsDict.keySet()) {
@@ -208,9 +203,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     g.setColor(roadsDict.get(road).getRoadColour().colour);
                     Graphics2D g2 = (Graphics2D) g;
                     g2.setStroke(new BasicStroke(2));
-                    g2.drawLine(roadsDict.get(road).getRoadNodeBoardCoordinates().getFirst().getFirst() + 10,
+                    g2.drawLine(roadsDict.get(road).getRoadNodeBoardCoordinates().getFirst().getFirst() + 5,
                             roadsDict.get(road).getRoadNodeBoardCoordinates().getFirst().getLast(),
-                            roadsDict.get(road).getRoadNodeBoardCoordinates().getLast().getFirst() + 10,
+                            roadsDict.get(road).getRoadNodeBoardCoordinates().getLast().getFirst() + 5,
                             roadsDict.get(road).getRoadNodeBoardCoordinates().getLast().getLast());
                 }
             }
@@ -480,6 +475,12 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
         };
 
+        tradeButton = new JButton("Trade Resources") {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(800, DEFAULT_GAME_HEIGHT - 400, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
+            }
+        };
+
         endTurnButton = new JButton("End Turn") {
             public void setBounds(int x, int y, int width, int height) {
                 super.setBounds(850, DEFAULT_GAME_HEIGHT - 200, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
@@ -535,6 +536,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             upgradeSettlementButton.setVisible(false);
             endTurnButton.setVisible(false);
             diceRollLabel.setVisible(false);
+            tradeButton.setVisible(false);
             diceRollLabel.setFont(DICE_ROLL_FONT);
             thisPlayerScoreLabel.setFont(SCORE_FONT);
             thisPlayerLabel.setFont(SCORE_FONT);
@@ -585,6 +587,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     buildRoadButton.setVisible(true);
                     buildSettlementButton.setVisible(true);
                     upgradeSettlementButton.setVisible(true);
+                    tradeButton.setVisible(true);
                     endTurnButton.setVisible(true);
 
                     player.updatePlayerResourcesDict(newResources);
@@ -649,6 +652,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 buildRoadButton.setVisible(false);
                 buildSettlementButton.setVisible(false);
                 upgradeSettlementButton.setVisible(false);
+                tradeButton.setVisible(false);
                 endTurnButton.setVisible(false);
 
                 Player currentPlayer = findCurrentPlayer();
@@ -662,6 +666,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         gamePanel.add(buildRoadButton);
         gamePanel.add(buildSettlementButton);
         gamePanel.add(upgradeSettlementButton);
+        gamePanel.add(tradeButton);
         gamePanel.add(endTurnButton);
         gamePanel.add(diceRollLabel);
         gamePanel.add(thisPlayerScoreLabel);
@@ -770,6 +775,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         buildRoadButton.setVisible(false);
         rollDiceButton.setVisible(false);
         upgradeSettlementButton.setVisible(false);
+        tradeButton.setVisible(false);
         endTurnButton.setVisible(false);
         diceRollLabel.setVisible(false);
 
@@ -995,6 +1001,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                                 buildRoadButton.setVisible(false);
                                                 buildSettlementButton.setVisible(false);
                                                 upgradeSettlementButton.setVisible(false);
+                                                tradeButton.setVisible(false);
                                                 endTurnButton.setVisible(false);
                                             }
                                         }
@@ -1007,6 +1014,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                                 buildRoadButton.setVisible(true);
                                                 buildSettlementButton.setVisible(true);
                                                 upgradeSettlementButton.setVisible(true);
+                                                tradeButton.setVisible(true);
                                                 endTurnButton.setVisible(true);
                                             }
                                         }
