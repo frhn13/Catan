@@ -12,6 +12,8 @@ public class Constants {
 
     public static final int GAME_BUTTON_WIDTH = 200;
     public static final int GAME_BUTTON_HEIGHT = 50;
+    public static final int SMALL_BUTTON_WIDTH = 50;
+    public static final int SMALL_BUTTON_HEIGHT = 50;
 
     public static final Font DICE_ROLL_FONT = new Font("MV Boli", Font.PLAIN, 50);
     public static final Font SCORE_FONT = new Font("MV Boli", Font.PLAIN, 30);

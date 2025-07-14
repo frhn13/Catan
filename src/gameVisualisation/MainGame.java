@@ -38,6 +38,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
     JButton bankTradeButton;
     JButton playerTradeButton;
+    JButton acceptTradeButton;
+    JButton rejectTradeButton;
 
     JPanel endgamePanel;
     JLabel scoresLabel;
@@ -51,12 +53,14 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     boolean upgradingToCity = false;
     boolean buildingNewRoad = false;
     boolean tradingResources = false;
+    boolean tradeOffer = false;
 
     StringBuilder finalScores = new StringBuilder();
     StringBuilder finalSettlements = new StringBuilder();
     StringBuilder finalCities = new StringBuilder();
 
     Player player;
+    Player tradingPlayer;
     GameClient gameClient = new GameClient();
 
     ArrayList<Player> players = GameBoard.getAllPlayers();
@@ -68,6 +72,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     int currentPlayerTurn;
     HashMap<ResourceType, Integer> currentPlayerGivingTrade = new HashMap<>();
     HashMap<ResourceType, Integer> currentPlayerTakingTrade = new HashMap<>();
+    HashMap<ResourceType, Integer> newPlayerGivingTrade = new HashMap<>();
+    HashMap<ResourceType, Integer> newPlayerTakingTrade = new HashMap<>();
     HashMap<ArrayList<Integer>, ResourceType> givingTradeCoordinates = new HashMap<>();
     HashMap<ArrayList<Integer>, ResourceType> takingTradeCoordinates = new HashMap<>();
 
@@ -182,6 +188,29 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                             g.setColor(Color.black);
                             g.drawString(String.valueOf(currentPlayerGivingTrade.get(resource)), card_num * 100 + 70, DEFAULT_GAME_HEIGHT - 560);
                         }
+                        card_num++;
+                    }
+                }
+
+                if (tradeOffer && tradingPlayer.getPlayerNumber() != player.getPlayerNumber()) {
+                    acceptTradeButton.setVisible(true);
+                    rejectTradeButton.setVisible(true);
+                    card_num = 0;
+                    for (ResourceType resource : newPlayerTakingTrade.keySet()) {
+                        Image cardImg = new ImageIcon(Objects.requireNonNull(getClass().getResource("/Images/gameCards/" + resource.cardImage))).getImage();
+                        g.drawImage(cardImg, DEFAULT_GAME_WIDTH - card_num * 100 - 100, DEFAULT_GAME_HEIGHT - 700, CARD_WIDTH, CARD_HEIGHT, null);
+                        g.setFont(new Font("Arial", Font.BOLD, 30));
+                        g.setColor(Color.black);
+                        g.drawString(String.valueOf(newPlayerTakingTrade.get(resource)), DEFAULT_GAME_WIDTH - card_num * 100 - 80, DEFAULT_GAME_HEIGHT - 600);
+                        card_num++;
+                    }
+                    card_num = 0;
+                    for (ResourceType resource : newPlayerGivingTrade.keySet()) {
+                        Image cardImg = new ImageIcon(Objects.requireNonNull(getClass().getResource("/Images/gameCards/" + resource.cardImage))).getImage();
+                        g.drawImage(cardImg, DEFAULT_GAME_WIDTH - card_num * 100 - 100, DEFAULT_GAME_HEIGHT - 600, CARD_WIDTH, CARD_HEIGHT, null);
+                        g.setFont(new Font("Arial", Font.BOLD, 30));
+                        g.setColor(Color.black);
+                        g.drawString(String.valueOf(newPlayerGivingTrade.get(resource)), DEFAULT_GAME_WIDTH - card_num * 100 - 80, DEFAULT_GAME_HEIGHT - 560);
                         card_num++;
                     }
                 }
@@ -463,7 +492,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                 gameClient.addRoad();
 
                                 if (gameState == GameState.INITIAL_PLACEMENT) {
-                                    if (player.getInitialPlacements() >= 2 && player.getPlayerNumber() == 4)
+                                    if (player.getInitialPlacements() >= 1 && player.getPlayerNumber() == 4)
                                         gameClient.startNormalGame();
                                     currentPlayerTurn = player.getPlayerNumber() < 4 ? player.getPlayerNumber() + 1 : 1;
                                     buildRoadButton.setVisible(false);
@@ -482,14 +511,12 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     for (ArrayList<Integer> resourceTakingCoordinates : takingTradeCoordinates.keySet()) {
                         if (mouseX >= resourceTakingCoordinates.getFirst() && mouseX <= resourceTakingCoordinates.getFirst() + CARD_WIDTH &&
                         mouseY >= resourceTakingCoordinates.getLast() && mouseY <= resourceTakingCoordinates.getLast() + CARD_HEIGHT) {
-                            System.out.println("yay");
                             currentPlayerTakingTrade.put(takingTradeCoordinates.get(resourceTakingCoordinates), currentPlayerTakingTrade.get(takingTradeCoordinates.get(resourceTakingCoordinates)) + 1);
                         }
                     }
                     for (ArrayList<Integer> resourceGivingCoordinates : givingTradeCoordinates.keySet()) {
                         if (mouseX >= resourceGivingCoordinates.getFirst() && mouseX <= resourceGivingCoordinates.getFirst() + CARD_WIDTH &&
                                 mouseY >= resourceGivingCoordinates.getLast() && mouseY <= resourceGivingCoordinates.getLast() + CARD_HEIGHT) {
-                            System.out.println("yay");
                             currentPlayerGivingTrade.put(givingTradeCoordinates.get(resourceGivingCoordinates), currentPlayerGivingTrade.get(givingTradeCoordinates.get(resourceGivingCoordinates)) + 1);
                         }
                     }
@@ -560,6 +587,17 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
         };
 
+        acceptTradeButton = new JButton("✓") {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(DEFAULT_GAME_WIDTH - 400, DEFAULT_GAME_HEIGHT - 500, SMALL_BUTTON_WIDTH, SMALL_BUTTON_HEIGHT);
+            }
+        };
+        rejectTradeButton = new JButton("x") {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(DEFAULT_GAME_WIDTH - 300, DEFAULT_GAME_HEIGHT - 500, SMALL_BUTTON_WIDTH, SMALL_BUTTON_HEIGHT);
+            }
+        };
+
         diceRollLabel = new JLabel() {
           public void setBounds(int x, int y, int width, int height) {
               super.setBounds(DEFAULT_GAME_WIDTH / 2 - 50, DEFAULT_GAME_HEIGHT - 300, 100, 100);
@@ -612,6 +650,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             tradeButton.setVisible(false);
             playerTradeButton.setVisible(false);
             bankTradeButton.setVisible(false);
+            acceptTradeButton.setVisible(false);
+            rejectTradeButton.setVisible(false);
             diceRollLabel.setFont(DICE_ROLL_FONT);
             thisPlayerScoreLabel.setFont(SCORE_FONT);
             thisPlayerLabel.setFont(SCORE_FONT);
@@ -623,6 +663,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 buildSettlementButton.setVisible(true);
             }
         }
+
+//        if (gameState == GameState.NORMAL_PLAY) {
+//            gameClient.startNormalGame();
+//        }
 
         rollDiceButton.addActionListener(new ActionListener() {
             @Override
@@ -746,11 +790,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         bankTradeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("yay");
                 int totalResources = 0;
                 HashMap<ResourceType, Integer> newResources = new HashMap<>();
-                System.out.println(currentPlayerTakingTrade);
-                System.out.println(currentPlayerGivingTrade);
+//                System.out.println(currentPlayerTakingTrade);
+//                System.out.println(currentPlayerGivingTrade);
 
                 for (ResourceType resourceTaken : currentPlayerTakingTrade.keySet()) {
                     totalResources += currentPlayerTakingTrade.get(resourceTaken);
@@ -758,17 +801,38 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 }
                 System.out.println(totalResources);
                 for (ResourceType resourceGiven : currentPlayerGivingTrade.keySet()) {
-                    System.out.println(player.getPlayerResourcesDict());
-                    System.out.println(player.getPlayerResourcesDict().get(resourceGiven));
+//                    System.out.println(player.getPlayerResourcesDict());
+//                    System.out.println(player.getPlayerResourcesDict().get(resourceGiven));
                     if (totalResources * 4 <= player.getPlayerResourcesDict().get(resourceGiven) && currentPlayerGivingTrade.get(resourceGiven) == totalResources * 4) {
                         newResources.put(resourceGiven, totalResources * -4);
                         player.updatePlayerResourcesDict(newResources);
                         resetTrading();
-                        System.out.println("bay");
                         break;
                     }
                 }
                 gamePanel.repaint();
+            }
+        });
+
+        playerTradeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                boolean validTrade = true;
+                HashMap<ResourceType, Integer> resourcesForCurrentPlayer = new HashMap<>();
+                HashMap<ResourceType, Integer> resourcesForNewPlayer = new HashMap<>();
+
+                for (ResourceType resourceTaken : currentPlayerTakingTrade.keySet()) {
+                    resourcesForCurrentPlayer.put(resourceTaken, currentPlayerTakingTrade.get(resourceTaken));
+                    resourcesForNewPlayer.put(resourceTaken, currentPlayerTakingTrade.get(resourceTaken) * -1);
+                }
+                for (ResourceType resourceGiven : currentPlayerGivingTrade.keySet()) {
+                    resourcesForCurrentPlayer.put(resourceGiven, currentPlayerTakingTrade.get(resourceGiven) * -1);
+                    resourcesForNewPlayer.put(resourceGiven, currentPlayerTakingTrade.get(resourceGiven));
+
+                    if (player.getPlayerResourcesDict().get(resourceGiven) < currentPlayerGivingTrade.get(resourceGiven))
+                        validTrade = false;
+                }
+                if (validTrade) gameClient.offerPlayerTrade();
             }
         });
 
@@ -800,6 +864,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         gamePanel.add(tradeButton);
         gamePanel.add(playerTradeButton);
         gamePanel.add(bankTradeButton);
+        gamePanel.add(acceptTradeButton);
+        gamePanel.add(rejectTradeButton);
         gamePanel.add(endTurnButton);
         gamePanel.add(diceRollLabel);
         gamePanel.add(thisPlayerScoreLabel);
@@ -918,6 +984,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 currentPlayerGivingTrade.put(resource, 0);
             }
         }
+        acceptTradeButton.setVisible(false);
+        rejectTradeButton.setVisible(false);
     }
 
     public class GameClient {
@@ -962,6 +1030,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
         public void updateResources() {
             csc.updateResources();
+        }
+
+        public void offerPlayerTrade() {
+            csc.offerPlayerTrade();
         }
 
         public void endGame() {
@@ -1080,6 +1152,19 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 }
             }
 
+            public void offerPlayerTrade() {
+                try {
+                    dataOut.writeObject(NEW_TRADE);
+                    dataOut.writeObject(currentPlayerTakingTrade);
+                    dataOut.writeObject(currentPlayerGivingTrade);
+                    dataOut.reset();
+                    dataOut.writeObject(player);
+                    dataOut.flush();
+                } catch (IOException e) {
+                    System.out.println("IOException occurred from offerPlayerTrade() CSC");
+                }
+            }
+
             public void endGame() {
                 try {
                     dataOut.writeObject(END_GAME);
@@ -1159,6 +1244,16 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         townsDict = (HashMap<ArrayList<Integer>, Town>) dataIn.readObject();
                                         allPlayers = (ArrayList<Player>) dataIn.readObject();
                                         displayUserStats();
+                                        break;
+                                    case NEW_TRADE_ADDED:
+                                        newPlayerGivingTrade = (HashMap<ResourceType, Integer>) dataIn.readObject();
+                                        newPlayerTakingTrade = (HashMap<ResourceType, Integer>) dataIn.readObject();
+                                        tradingPlayer = (Player) dataIn.readObject();
+                                        tradeOffer = true;
+                                        System.out.println("Taking");
+                                        System.out.println(newPlayerTakingTrade);
+                                        System.out.println("Giving");
+                                        System.out.println(newPlayerGivingTrade);
                                         break;
                                     case END_GAME_ADDED:
                                         gameState = (GameState) dataIn.readObject();

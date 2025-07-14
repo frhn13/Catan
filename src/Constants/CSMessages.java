@@ -9,5 +9,8 @@ public enum CSMessages {
     START_NORMAL_GAME,
     NEW_RESOURCES,
     END_GAME,
-    NEW_GAME
+    NEW_GAME,
+    NEW_TRADE,
+    NEW_TRADE_ACCEPTED,
+    NEW_TRADE_REJECTED
 }

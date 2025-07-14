@@ -3,6 +3,7 @@ package Server;
 import Constants.CSMessages;
 import Constants.GameState;
 import Constants.PlayerColour;
+import Constants.ResourceType;
 import gameObjects.*;
 
 import java.io.*;
@@ -23,6 +24,10 @@ public class GameServer {
     private ServerSideConnection player2;
     private ServerSideConnection player3;
     private ServerSideConnection player4;
+
+    private HashMap<ResourceType, Integer> currentPlayerTakingTrade;
+    private HashMap<ResourceType, Integer> currentPlayerGivingTrade;
+    private Player currentPlayer;
 
     public GameServer() {
         System.out.println("--Game Server--");
@@ -143,6 +148,13 @@ public class GameServer {
                                 GameBoard.updatePlayers(newPlayer);
                                 broadcastNewRoad();
                                 break;
+                            case NEW_TRADE:
+                                currentPlayerTakingTrade = (HashMap<ResourceType, Integer>) dataIn.readObject();
+                                currentPlayerGivingTrade = (HashMap<ResourceType, Integer>) dataIn.readObject();
+                                currentPlayer = (Player) dataIn.readObject();
+                                System.out.println(currentPlayerTakingTrade);
+                                System.out.println(currentPlayerGivingTrade);
+                                broadcastNewTradeOffer();
                             case NEW_TURN:
                                 GameBoard.setCurrentPlayerTurn(dataIn.readInt());
                                 System.out.println("Current Turn: " + GameBoard.getCurrentPlayerTurn());
@@ -249,6 +261,21 @@ public class GameServer {
                 System.out.println("IOException from broadcastNewRoad() SSC");
             }
             System.out.println("broadcastNewRoad SSC");
+        }
+
+        public void broadcastNewTradeOffer() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(NEW_TRADE_ADDED);
+                    ssc.dataOut.writeObject(currentPlayerTakingTrade);
+                    ssc.dataOut.writeObject(currentPlayerGivingTrade);
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(currentPlayer);
+                    ssc.dataOut.flush();
+                }
+            } catch (Exception e) {
+                System.out.println("IOException from broadNewTradeOffer() SSC");
+            }
         }
 
         public void broadcastNewTurn() {
