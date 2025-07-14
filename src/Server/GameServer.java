@@ -155,6 +155,13 @@ public class GameServer {
                                 System.out.println(currentPlayerTakingTrade);
                                 System.out.println(currentPlayerGivingTrade);
                                 broadcastNewTradeOffer();
+                                break;
+                            case NEW_TRADE_ACCEPTED:
+                                currentPlayerGivingTrade = (HashMap<ResourceType, Integer>) dataIn.readObject();
+                                currentPlayerTakingTrade = (HashMap<ResourceType, Integer>) dataIn.readObject();
+                                currentPlayer = (Player) dataIn.readObject();
+                                broadcastTradeAcceptance();
+                                break;
                             case NEW_TURN:
                                 GameBoard.setCurrentPlayerTurn(dataIn.readInt());
                                 System.out.println("Current Turn: " + GameBoard.getCurrentPlayerTurn());
@@ -275,6 +282,21 @@ public class GameServer {
                 }
             } catch (Exception e) {
                 System.out.println("IOException from broadNewTradeOffer() SSC");
+            }
+        }
+
+        public void broadcastTradeAcceptance() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(ACCEPTED_TRADE_ADDED);
+                    ssc.dataOut.writeObject(currentPlayerTakingTrade);
+                    ssc.dataOut.writeObject(currentPlayerGivingTrade);
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(currentPlayer);
+                    ssc.dataOut.flush();
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastTradeAcceptance() SSC");
             }
         }
 
