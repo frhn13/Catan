@@ -2,7 +2,6 @@ package Server;
 
 import Constants.CSMessages;
 import Constants.GameState;
-import Constants.PlayerColour;
 import Constants.ResourceType;
 import gameObjects.*;
 
@@ -10,7 +9,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import static Constants.CSMessages.*;
 import static Constants.SCMessages.*;
 
 public class GameServer {
@@ -128,6 +126,11 @@ public class GameServer {
                                 gameState = GameState.NORMAL_PLAY;
                                 broadcastNormalGame();
                                 break;
+                            case NEW_RESOURCES:
+                                newPlayer = (Player) dataIn.readObject();
+                                GameBoard.updatePlayers(newPlayer);
+                                broadcastNewResources();
+                                break;
                             case NEW_TOWN:
                                 GameBoard.setNodesDict((HashMap<ArrayList<Integer>, Node>) dataIn.readObject());
                                 GameBoard.setTownsDict((HashMap<ArrayList<Integer>, Town>) dataIn.readObject());
@@ -212,6 +215,19 @@ public class GameServer {
                 }
             } catch (IOException e) {
                 System.out.println("IOException from broadcastNormalGame() SSC");
+            }
+        }
+
+        public void broadcastNewResources() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(NEW_RESOURCES_ADDED);
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(GameBoard.getAllPlayers());
+                    ssc.dataOut.flush();
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastNewResources() CSC");
             }
         }
 
@@ -346,6 +362,7 @@ public class GameServer {
                     ssc.dataOut.writeInt(GameBoard.getCurrentPlayerTurn());
                     ssc.dataOut.flush();
                     ssc.setReady(true);
+                    resetList = new HashSet<>();
                 }
             } catch (IOException e) {
                 System.out.println("IOException from resetPlayers() SSC");

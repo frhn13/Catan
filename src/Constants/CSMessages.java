@@ -12,5 +12,4 @@ public enum CSMessages {
     NEW_GAME,
     NEW_TRADE,
     NEW_TRADE_ACCEPTED,
-    NEW_TRADE_REJECTED
 }

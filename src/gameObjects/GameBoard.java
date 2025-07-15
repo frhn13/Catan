@@ -1,6 +1,5 @@
 package gameObjects;
 
-import Constants.PlayerColour;
 import Constants.ResourceType;
 
 import java.io.Serializable;

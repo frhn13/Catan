@@ -34,6 +34,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     JLabel player1Label = new JLabel();
     JLabel player2Label = new JLabel();
     JLabel player3Label = new JLabel();
+    JLabel player1cardsLabel = new JLabel();
+    JLabel player2cardsLabel = new JLabel();
+    JLabel player3cardsLabel = new JLabel();
     JLabel currentPlayerLabel = new JLabel();
 
     JButton bankTradeButton;
@@ -521,6 +524,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     repaint();
 
                 }
+                setButtonText();
 
                 System.out.println("BRICK: " + player.getPlayerResourcesDict().get(ResourceType.BRICK));
                 System.out.println("LUMBER: " + player.getPlayerResourcesDict().get(ResourceType.LUMBER));
@@ -587,12 +591,12 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
         acceptTradeButton = new JButton("✓") {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(DEFAULT_GAME_WIDTH - 400, DEFAULT_GAME_HEIGHT - 500, SMALL_BUTTON_WIDTH, SMALL_BUTTON_HEIGHT);
+                super.setBounds(DEFAULT_GAME_WIDTH - 250, DEFAULT_GAME_HEIGHT - 500, SMALL_BUTTON_WIDTH, SMALL_BUTTON_HEIGHT);
             }
         };
         rejectTradeButton = new JButton("x") {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(DEFAULT_GAME_WIDTH - 300, DEFAULT_GAME_HEIGHT - 500, SMALL_BUTTON_WIDTH, SMALL_BUTTON_HEIGHT);
+                super.setBounds(DEFAULT_GAME_WIDTH - 150, DEFAULT_GAME_HEIGHT - 500, SMALL_BUTTON_WIDTH, SMALL_BUTTON_HEIGHT);
             }
         };
 
@@ -622,19 +626,37 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
         player1Label = new JLabel() {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(DEFAULT_GAME_WIDTH - 250, 50, 250, 100);
+                super.setBounds(50, 100, 400, 100);
             }
         };
 
         player2Label = new JLabel() {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(DEFAULT_GAME_WIDTH - 250, 100, 250, 100);
+                super.setBounds(50, 250, 400, 100);
             }
         };
 
         player3Label = new JLabel() {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(DEFAULT_GAME_WIDTH - 250, 150, 250, 100);
+                super.setBounds(50, 400, 400, 100);
+            }
+        };
+
+        player1cardsLabel = new JLabel() {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(50, 150, 400, 100);
+            }
+        };
+
+        player2cardsLabel = new JLabel() {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(50, 300, 400, 100);
+            }
+        };
+
+        player3cardsLabel = new JLabel() {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(50, 450, 400, 100);
             }
         };
 
@@ -657,6 +679,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             player1Label.setFont(OTHER_SCORE_FONT);
             player2Label.setFont(OTHER_SCORE_FONT);
             player3Label.setFont(OTHER_SCORE_FONT);
+            player1cardsLabel.setFont(OTHER_SCORE_FONT);
+            player2cardsLabel.setFont(OTHER_SCORE_FONT);
+            player3cardsLabel.setFont(OTHER_SCORE_FONT);
             if (currentPlayerTurn == player.getPlayerNumber()) {
                 buildSettlementButton.setVisible(true);
             }
@@ -791,9 +816,11 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 }
                 System.out.println(totalResources);
                 for (ResourceType resourceGiven : currentPlayerGivingTrade.keySet()) {
-                    if (totalResources * 4 <= player.getPlayerResourcesDict().get(resourceGiven) && currentPlayerGivingTrade.get(resourceGiven) == totalResources * 4) {
+                    if (totalResources * 4 <= player.getPlayerResourcesDict().get(resourceGiven) && currentPlayerGivingTrade.get(resourceGiven) == totalResources * 4
+                            && (currentPlayerGivingTrade.get(resourceGiven) == 0 || currentPlayerTakingTrade.get(resourceGiven) == 0)) {
                         newResources.put(resourceGiven, totalResources * -4);
                         player.updatePlayerResourcesDict(newResources);
+                        gameClient.updateResources();
                         resetTrading();
                         break;
                     }
@@ -807,9 +834,18 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             public void actionPerformed(ActionEvent e) {
                 boolean validTrade = true;
                 for (ResourceType resourceGiven : currentPlayerGivingTrade.keySet()) {
-                    if (player.getPlayerResourcesDict().get(resourceGiven) < currentPlayerGivingTrade.get(resourceGiven))
+                    if (player.getPlayerResourcesDict().get(resourceGiven) < currentPlayerGivingTrade.get(resourceGiven) ||
+                            (currentPlayerGivingTrade.get(resourceGiven) != 0 && currentPlayerTakingTrade.get(resourceGiven) != 0))
                         validTrade = false;
                 }
+                if ((currentPlayerTakingTrade.get(ResourceType.LUMBER) == 0 && currentPlayerTakingTrade.get(ResourceType.BRICK) == 0
+                    && currentPlayerTakingTrade.get(ResourceType.WOOL) == 0 && currentPlayerTakingTrade.get(ResourceType.GRAIN) == 0
+                    && currentPlayerTakingTrade.get(ResourceType.ORE) == 0) ||
+                    (currentPlayerGivingTrade.get(ResourceType.LUMBER) == 0 && currentPlayerGivingTrade.get(ResourceType.BRICK) == 0
+                    && currentPlayerGivingTrade.get(ResourceType.WOOL) == 0 && currentPlayerGivingTrade.get(ResourceType.GRAIN) == 0
+                    && currentPlayerGivingTrade.get(ResourceType.ORE) == 0))
+                    validTrade = false;
+
                 if (validTrade) gameClient.offerPlayerTrade();
             }
         });
@@ -844,6 +880,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     resetTrading();
                     acceptTradeButton.setVisible(false);
                     rejectTradeButton.setVisible(false);
+                    gameClient.updateResources();
                     gameClient.acceptTradeOffer();
                 }
             }
@@ -899,6 +936,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         gamePanel.add(player1Label);
         gamePanel.add(player2Label);
         gamePanel.add(player3Label);
+        gamePanel.add(player1cardsLabel);
+        gamePanel.add(player2cardsLabel);
+        gamePanel.add(player3cardsLabel);
 
         this.setSize(DEFAULT_GAME_WIDTH, DEFAULT_GAME_HEIGHT);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -967,6 +1007,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     }
 
     public void endOfGame() {
+        finalScores = new StringBuilder();
+        finalSettlements = new StringBuilder();
+        finalCities = new StringBuilder();
         finalScores.append("Final Score: ");
         finalSettlements.append("Number of Settlements: ");
         finalCities.append("Number of Cities: ");
@@ -985,6 +1028,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         scoresLabel.setText(String.valueOf(finalScores));
         numberOfSettlementsLabel.setText(String.valueOf(finalSettlements));
         numberOfCitiesLabel.setText(String.valueOf(finalCities));
+        newGameButton.setVisible(true);
+        waitingLabel.setVisible(false);
 
         diceRollLabel.setText("");
         thisPlayerScoreLabel.setText("");
@@ -993,6 +1038,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         player1Label.setText("");
         player2Label.setText("");
         player3Label.setText("");
+        player1cardsLabel.setText("");
+        player2cardsLabel.setText("");
+        player3cardsLabel.setText("");
 
         this.add(endgamePanel);
         this.remove(gamePanel);
@@ -1286,6 +1334,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                     case NEW_TURN_ADDED:
                                         currentPlayerTurn = dataIn.readInt();
                                         allPlayers = (ArrayList<Player>) dataIn.readObject();
+                                        tradeOffer = false;
+                                        acceptTradeButton.setVisible(false);
+                                        rejectTradeButton.setVisible(false);
                                         if (currentPlayerTurn == player.getPlayerNumber()) {
                                             if (gameState == GameState.INITIAL_PLACEMENT) {
                                                 buildSettlementButton.setVisible(true);
@@ -1302,6 +1353,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         displayUserStats();
                                         break;
                                     case NEW_RESOURCES_ADDED:
+                                        allPlayers = (ArrayList<Player>) dataIn.readObject();
                                         if (currentPlayerTurn == player.getPlayerNumber()) {
                                             if (gameState == GameState.NORMAL_PLAY) {
                                                 rollDiceButton.setVisible(false);
@@ -1312,6 +1364,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                                 endTurnButton.setVisible(true);
                                             }
                                         }
+                                        displayUserStats();
                                         break;
                                     case NEW_CITY_ADDED:
                                         townsDict = (HashMap<ArrayList<Integer>, Town>) dataIn.readObject();
@@ -1332,7 +1385,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         currentPlayerTakingTrade = (HashMap<ResourceType, Integer>) dataIn.readObject();
                                         currentPlayerGivingTrade = (HashMap<ResourceType, Integer>) dataIn.readObject();
                                         tradingPlayer = (Player) dataIn.readObject();
-                                        if (player.getPlayerNumber() == tradingPlayer.getPlayerNumber()) finishTrade();
+                                        if (player.getPlayerNumber() == tradingPlayer.getPlayerNumber()) {
+                                            finishTrade();
+                                            updateResources();
+                                        }
                                         tradeOffer = false;
                                         acceptTradeButton.setVisible(false);
                                         rejectTradeButton.setVisible(false);
@@ -1375,17 +1431,25 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                         thisPlayerLabel.setText("Your Colour: " + currentPlayer.getPlayerColour());
                     }
                     else {
+                        int totalCards = 0;
+                        for (Integer resourceAmount : currentPlayer.getPlayerResourcesDict().values()) {
+                            totalCards += resourceAmount;
+                        }
+
                         switch (counter) {
                             case 0:
                                 player1Label.setText(currentPlayer.getPlayerColour() + "'s Score: " + currentPlayer.getScore());
+                                player1cardsLabel.setText(currentPlayer.getPlayerColour() + "'s no. of cards: " + totalCards);
                                 counter++;
                                 break;
                             case 1:
                                 player2Label.setText(currentPlayer.getPlayerColour() + "'s Score: " + currentPlayer.getScore());
+                                player2cardsLabel.setText(currentPlayer.getPlayerColour() + "'s no. of cards: " + totalCards);
                                 counter++;
                                 break;
                             case 2:
                                 player3Label.setText(currentPlayer.getPlayerColour() + "'s Score: " + currentPlayer.getScore());
+                                player3cardsLabel.setText(currentPlayer.getPlayerColour() + "'s no. of cards: " + totalCards);
                                 counter++;
                                 break;
                         }
