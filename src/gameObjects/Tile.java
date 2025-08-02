@@ -11,12 +11,16 @@ public class Tile implements Serializable {
     private ResourceType tileResource;
     private int rollValue;
     private ArrayList<ArrayList<Integer>> correspondingNodeCoordinates;
+    private ArrayList<Integer> tileBoardCoordinates;
+    private boolean tileBlocked;
 
     public Tile(ArrayList<Integer> tileCoordinates, ResourceType tileResource, int rollValue, ArrayList<ArrayList<Integer>> correspondingNodeCoordinates) {
         this.tileCoordinates = tileCoordinates;
         this.tileResource = tileResource;
         this.rollValue = rollValue;
         this.correspondingNodeCoordinates = correspondingNodeCoordinates;
+        this.tileBoardCoordinates = new ArrayList<>();
+        this.tileBlocked = tileResource == ResourceType.DESERT;
     }
 
     public ArrayList<Integer> getTileCoordinates() {
@@ -49,5 +53,21 @@ public class Tile implements Serializable {
 
     public void setCorrespondingNodeCoordinates(ArrayList<ArrayList<Integer>> correspondingNodeCoordinates) {
         this.correspondingNodeCoordinates = correspondingNodeCoordinates;
+    }
+
+    public ArrayList<Integer> getTileBoardCoordinates() {
+        return tileBoardCoordinates;
+    }
+
+    public void setTileBoardCoordinates(ArrayList<Integer> tileBoardCoordinates) {
+        this.tileBoardCoordinates = tileBoardCoordinates;
+    }
+
+    public boolean isTileBlocked() {
+        return tileBlocked;
+    }
+
+    public void setTileBlocked(boolean tileBlocked) {
+        this.tileBlocked = tileBlocked;
     }
 }
