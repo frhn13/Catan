@@ -52,12 +52,14 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     JLabel waitingLabel;
 
     int diceValue;
+    HashMap<PlayerColour, ArrayList<Integer>> playersToRob;
     boolean buildingNewSettlement = false;
     boolean upgradingToCity = false;
     boolean buildingNewRoad = false;
     boolean tradingResources = false;
     boolean tradeOffer = false;
     boolean moveRobber = false;
+    boolean robPlayer = false;
 
     StringBuilder finalScores = new StringBuilder();
     StringBuilder finalSettlements = new StringBuilder();
@@ -65,9 +67,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
     Player player;
     Player tradingPlayer;
+    Player robbedPlayer;
     GameClient gameClient = new GameClient();
 
-    ArrayList<Player> players = GameBoard.getAllPlayers();
     ArrayList<Player> allPlayers;
     HashMap<ArrayList<Integer>, Tile> tilesDict;
     HashMap<ArrayList<Integer>, Node> nodesDict;
@@ -240,7 +242,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                             g.drawString(String.valueOf(tilesDict.get(tile).getRollValue()), tilesDict.get(tile).getTileCoordinates().getFirst() * TILE_WIDTH + base_x + 40, tilesDict.get(tile).getTileCoordinates().getLast() * 75 + 110);
                         }
                         if (tilesDict.get(tile).isTileBlocked()) {
-                            System.out.println(tilesDict.get(tile).getTileResource());
                             g.setColor(Color.magenta);
                             g.fillOval(tilesDict.get(tile).getTileCoordinates().getFirst() * TILE_WIDTH + (base_x - 10) + (TILE_WIDTH / 2), tilesDict.get(tile).getTileCoordinates().getLast() * 75 + 120, 10, 10);
                         }
@@ -292,6 +293,16 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                             roadsDict.get(road).getRoadNodeBoardCoordinates().getFirst().getLast(),
                             roadsDict.get(road).getRoadNodeBoardCoordinates().getLast().getFirst() + 5,
                             roadsDict.get(road).getRoadNodeBoardCoordinates().getLast().getLast());
+                }
+
+                if (robPlayer) {
+                    card_num = 0;
+                    for (PlayerColour playerToRob : playersToRob.keySet()) {
+                        g.setColor(playerToRob.colour);
+                        g.fillRect(DEFAULT_GAME_WIDTH / 2 + card_num * 30, DEFAULT_GAME_HEIGHT - 500, 20, 20);
+                        playersToRob.replace(playerToRob, new ArrayList<>(Arrays.asList(DEFAULT_GAME_WIDTH / 2 + card_num * 30, DEFAULT_GAME_HEIGHT - 500)));
+                        card_num++;
+                    }
                 }
             }
         };
@@ -496,12 +507,12 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                 gameClient.addRoad();
 
                                 if (gameState == GameState.INITIAL_PLACEMENT) {
-                                    if (player.getInitialPlacements() >= 2 && player.getPlayerNumber() == 1)
+                                    if (player.getInitialPlacements() >= 0 && player.getPlayerNumber() == 1)
                                         gameClient.startNormalGame();
-                                    if (player.getInitialPlacements() == 1)
-                                        currentPlayerTurn = player.getPlayerNumber() < 4 ? player.getPlayerNumber() + 1 : 4;
-                                    if (player.getInitialPlacements() == 2)
-                                        currentPlayerTurn = player.getPlayerNumber() > 1 ? player.getPlayerNumber() - 1 : 1;
+//                                    if (player.getInitialPlacements() == 1)
+//                                        currentPlayerTurn = player.getPlayerNumber() < 4 ? player.getPlayerNumber() + 1 : 4;
+//                                    if (player.getInitialPlacements() == 2)
+//                                        currentPlayerTurn = player.getPlayerNumber() > 1 ? player.getPlayerNumber() - 1 : 1;
                                     buildRoadButton.setVisible(false);
                                     buildSettlementButton.setVisible(false);
                                     gameClient.updateTurn();
@@ -534,7 +545,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                         }
                     }
                     repaint();
-
                 }
 
                 if (moveRobber) {
@@ -545,18 +555,46 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                 otherTile.setTileBlocked(false);
 
                             tile.setTileBlocked(true);
-                            rollDiceButton.setVisible(false);
-                            buildRoadButton.setVisible(true);
-                            buildSettlementButton.setVisible(true);
-                            upgradeSettlementButton.setVisible(true);
-                            tradeButton.setVisible(true);
-                            endTurnButton.setVisible(true);
+                            gameClient.moveRobber();
                             moveRobber = false;
+                            robPlayer(tile);
 
-                            repaint();
+                            if (!robPlayer) {
+                                rollDiceButton.setVisible(false);
+                                buildRoadButton.setVisible(true);
+                                buildSettlementButton.setVisible(true);
+                                upgradeSettlementButton.setVisible(true);
+                                tradeButton.setVisible(true);
+                                endTurnButton.setVisible(true);
+                            }
                             break;
                         }
                     }
+                    repaint();
+                }
+
+                if (robPlayer) {
+                    outerLoop:
+                    for (PlayerColour playerToRob : playersToRob.keySet()) {
+                        if (mouseX >= playersToRob.get(playerToRob).getFirst() && mouseX <= playersToRob.get(playerToRob).getFirst() + 20
+                                && mouseY >= playersToRob.get(playerToRob).getLast() && mouseY <= playersToRob.get(playerToRob).getLast() + 20) {
+                            for (Player player : allPlayers) {
+                                if (player.getPlayerColour() == playerToRob) {
+                                    robbedPlayer = player;
+
+                                    robPlayer = false;
+                                    rollDiceButton.setVisible(false);
+                                    buildRoadButton.setVisible(true);
+                                    buildSettlementButton.setVisible(true);
+                                    upgradeSettlementButton.setVisible(true);
+                                    tradeButton.setVisible(true);
+                                    endTurnButton.setVisible(true);
+                                    break outerLoop;
+                                }
+                            }
+                        }
+                    }
+                    repaint();
                 }
 
                 setButtonText();
@@ -734,7 +772,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 int diceRoll1 = random.nextInt(6) + 1;
                 int diceRoll2 = random.nextInt(6) + 1;
                 int diceValue = diceRoll1 + diceRoll2;
-                diceValue = 7;
+                diceValue = random.nextInt(6, 9);
 
                 HashMap<ArrayList<Integer>, Town> playerTownsDict = player.getPlayerTownsDict();
 
@@ -1133,6 +1171,16 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         resetTrading();
     }
 
+    public void robPlayer(Tile tile) {
+        playersToRob = new HashMap<>();
+        for (ArrayList<Integer> node : tile.getCorrespondingNodeCoordinates()) {
+            if (townsDict.containsKey(node) && townsDict.get(node).getTownColour() != player.getPlayerColour())
+                playersToRob.put(townsDict.get(node).getTownColour(), new ArrayList<>(Arrays.asList(0, 0)));
+        }
+        robPlayer = !playersToRob.isEmpty();
+        System.out.println(robPlayer);
+    }
+
     public class GameClient {
 
         private ClientSideConnection csc;
@@ -1191,6 +1239,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
         public void resetGame() {
             csc.resetGame();
+        }
+
+        public void moveRobber() {
+            csc.moveRobber();
         }
 
         public class ClientSideConnection {
@@ -1349,6 +1401,16 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 }
             }
 
+            public void moveRobber() {
+                try {
+                    dataOut.writeObject(ROBBER_MOVED);
+                    dataOut.writeObject(tilesDict);
+                    dataOut.flush();
+                } catch (IOException e) {
+                    System.out.println("IOException occurred from moveRobber() CSC");
+                }
+            }
+
             public void listenForServerUpdates() {
                 new Thread(() -> {
                     try {
@@ -1450,6 +1512,9 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         player = new Player(player.getPlayerColour(), player.getPlayerNumber());
                                         sendPlayer();
                                         startOfNewGame();
+                                        break;
+                                    case ROBBER_MOVE_ADDED:
+                                        tilesDict = (HashMap<ArrayList<Integer>, Tile>) dataIn.readObject();
                                         break;
                                 }
                                 repaint();

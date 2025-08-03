@@ -183,6 +183,10 @@ public class GameServer {
                                     resetPlayers();
                                 }
                                 break;
+                            case ROBBER_MOVED:
+                                GameBoard.setTilesDict((HashMap<ArrayList<Integer>, Tile>) dataIn.readObject());
+                                broadcastRobberMoved();
+                                break;
                         }
                     }
                 }
@@ -366,6 +370,18 @@ public class GameServer {
                 }
             } catch (IOException e) {
                 System.out.println("IOException from resetPlayers() SSC");
+            }
+        }
+
+        public void broadcastRobberMoved() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(ROBBER_MOVE_ADDED);
+                    ssc.dataOut.writeObject(GameBoard.getTilesDict());
+                    ssc.dataOut.flush();
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from moveRobber() SSC");
             }
         }
     }
