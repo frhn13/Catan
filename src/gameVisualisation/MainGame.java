@@ -52,7 +52,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     JLabel waitingLabel;
 
     int diceValue;
+    int currentPlayerTurn;
+    HashMap<ResourceType, Integer> newResources;
     HashMap<PlayerColour, ArrayList<Integer>> playersToRob;
+
     boolean buildingNewSettlement = false;
     boolean upgradingToCity = false;
     boolean buildingNewRoad = false;
@@ -75,7 +78,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     HashMap<ArrayList<Integer>, Node> nodesDict;
     HashMap<ArrayList<Integer>, Town> townsDict;
     HashMap<ArrayList<ArrayList<Integer>>, Road> roadsDict;
-    int currentPlayerTurn;
     HashMap<ResourceType, Integer> currentPlayerGivingTrade = new HashMap<>();
     HashMap<ResourceType, Integer> currentPlayerTakingTrade = new HashMap<>();
     HashMap<ResourceType, Integer> newPlayerGivingTrade = new HashMap<>();
@@ -507,10 +509,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                 gameClient.addRoad();
 
                                 if (gameState == GameState.INITIAL_PLACEMENT) {
-                                    if (player.getInitialPlacements() >= 0 && player.getPlayerNumber() == 1)
+                                    if (player.getInitialPlacements() >= 2 && player.getPlayerNumber() == 1)
                                         gameClient.startNormalGame();
-//                                    if (player.getInitialPlacements() == 1)
-//                                        currentPlayerTurn = player.getPlayerNumber() < 4 ? player.getPlayerNumber() + 1 : 4;
+                                    if (player.getInitialPlacements() == 1)
+                                        currentPlayerTurn = player.getPlayerNumber() < 4 ? player.getPlayerNumber() + 1 : 1;
 //                                    if (player.getInitialPlacements() == 2)
 //                                        currentPlayerTurn = player.getPlayerNumber() > 1 ? player.getPlayerNumber() - 1 : 1;
                                     buildRoadButton.setVisible(false);
@@ -570,7 +572,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                             break;
                         }
                     }
-                    repaint();
                 }
 
                 if (robPlayer) {
@@ -594,8 +595,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                             }
                         }
                     }
-                    repaint();
                 }
+                repaint();
 
                 setButtonText();
 
@@ -771,47 +772,12 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 Random random = new Random();
                 int diceRoll1 = random.nextInt(6) + 1;
                 int diceRoll2 = random.nextInt(6) + 1;
-                int diceValue = diceRoll1 + diceRoll2;
-                diceValue = random.nextInt(6, 9);
+                diceValue = diceRoll1 + diceRoll2;
+                diceValue = random.nextInt(7, 9);
+                if (diceValue == 7) moveRobber = true;
 
-                HashMap<ArrayList<Integer>, Town> playerTownsDict = player.getPlayerTownsDict();
-
-                diceRollLabel.setVisible(true);
-                diceRollLabel.setText("Dice Roll: " + diceValue);
-
-                HashMap<ResourceType, Integer> newResources = new HashMap<>();
-                for (Tile tile : tilesDict.values()) {
-                    for (ArrayList<Integer> tileNode : tile.getCorrespondingNodeCoordinates()) {
-                        for (ArrayList<Integer> town : playerTownsDict.keySet()) {
-                            if (playerTownsDict.get(town).getTownCoordinates().equals(tileNode) &&
-                                    tile.getRollValue() == diceValue && !tile.isTileBlocked()) {
-                                int resourceAmount = playerTownsDict.get(town).isCity() ? 2 : 1;
-                                if (newResources.containsKey(tile.getTileResource()))
-                                    newResources.put(tile.getTileResource(), newResources.get(tile.getTileResource()) + resourceAmount);
-                                else
-                                    newResources.put(tile.getTileResource(), resourceAmount);
-                            }
-                        }
-                    }
-                }
-
-                if (diceValue == 7) {
-                    moveRobber = true;
-                    rollDiceButton.setVisible(false);
-                }
-
-                if (player.getPlayerNumber() == currentPlayerTurn && !moveRobber) {
-                    rollDiceButton.setVisible(false);
-                    buildRoadButton.setVisible(true);
-                    buildSettlementButton.setVisible(true);
-                    upgradeSettlementButton.setVisible(true);
-                    tradeButton.setVisible(true);
-                    endTurnButton.setVisible(true);
-
-                    player.updatePlayerResourcesDict(newResources);
-                    gameClient.updateResources();
-                    gamePanel.repaint();
-                }
+                rollDiceButton.setVisible(false);
+                gameClient.getResources();
                 setButtonText();
                 gamePanel.repaint();
             }
@@ -1225,6 +1191,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             csc.updateResources();
         }
 
+        public void getResources() {
+            csc.getResources();
+        }
+
         public void offerPlayerTrade() {
             csc.offerPlayerTrade();
         }
@@ -1344,12 +1314,22 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
             public void updateResources() {
                 try {
-                    dataOut.writeObject(NEW_RESOURCES);
                     dataOut.reset();
+                    dataOut.writeObject(NEW_RESOURCES);
                     dataOut.writeObject(player);
                     dataOut.flush();
                 } catch (IOException e) {
                     System.out.println("IOException occurred from updateResources() CSC");
+                }
+            }
+
+            public void getResources() {
+                try {
+                    dataOut.writeObject(GET_RESOURCES);
+                    dataOut.writeInt(diceValue);
+                    dataOut.flush();
+                } catch (IOException e) {
+                    System.out.println("IOException occurred from getResources() CSC");
                 }
             }
 
@@ -1402,6 +1382,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
 
             public void moveRobber() {
+                for (Tile tile : tilesDict.values()) {
+                    System.out.println(tile.getTileCoordinates());
+                    System.out.println(tile.isTileBlocked());
+                }
                 try {
                     dataOut.writeObject(ROBBER_MOVED);
                     dataOut.writeObject(tilesDict);
@@ -1468,6 +1452,33 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                             }
                                         }
                                         displayUserStats();
+                                        break;
+                                    case GET_RESOURCES_ADDED:
+                                        diceValue = dataIn.readInt();
+                                        HashMap<ArrayList<Integer>, Town> playerTownsDict = player.getPlayerTownsDict();
+
+                                        diceRollLabel.setVisible(true);
+                                        diceRollLabel.setText("Dice Roll: " + diceValue);
+
+                                        if (diceValue != 7) {
+                                            newResources = new HashMap<>();
+                                            for (Tile tile : tilesDict.values()) {
+                                                for (ArrayList<Integer> tileNode : tile.getCorrespondingNodeCoordinates()) {
+                                                    for (ArrayList<Integer> town : playerTownsDict.keySet()) {
+                                                        if (playerTownsDict.get(town).getTownCoordinates().equals(tileNode) &&
+                                                                tile.getRollValue() == diceValue && !tile.isTileBlocked()) {
+                                                            int resourceAmount = playerTownsDict.get(town).isCity() ? 2 : 1;
+                                                            if (newResources.containsKey(tile.getTileResource()))
+                                                                newResources.put(tile.getTileResource(), newResources.get(tile.getTileResource()) + resourceAmount);
+                                                            else
+                                                                newResources.put(tile.getTileResource(), resourceAmount);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            player.updatePlayerResourcesDict(newResources);
+                                            updateResources();
+                                        }
                                         break;
                                     case NEW_CITY_ADDED:
                                         townsDict = (HashMap<ArrayList<Integer>, Town>) dataIn.readObject();

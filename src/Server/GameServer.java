@@ -16,6 +16,7 @@ public class GameServer {
     private ServerSocket serverSocket;
     GameState gameState = GameState.LOBBY;
     private int numPlayers;
+    private int diceValue;
     private ArrayList<Player> allPlayers = new ArrayList<>();
     private HashSet<Integer> resetList = new HashSet<>();
     private ServerSideConnection player1;
@@ -131,6 +132,10 @@ public class GameServer {
                                 GameBoard.updatePlayers(newPlayer);
                                 broadcastNewResources();
                                 break;
+                            case GET_RESOURCES:
+                                diceValue = dataIn.readInt();
+                                broadcastGettingResources();
+                                break;
                             case NEW_TOWN:
                                 GameBoard.setNodesDict((HashMap<ArrayList<Integer>, Node>) dataIn.readObject());
                                 GameBoard.setTownsDict((HashMap<ArrayList<Integer>, Town>) dataIn.readObject());
@@ -225,13 +230,27 @@ public class GameServer {
         public void broadcastNewResources() {
             try {
                 for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
-                    ssc.dataOut.writeObject(NEW_RESOURCES_ADDED);
-                    ssc.dataOut.reset();
-                    ssc.dataOut.writeObject(GameBoard.getAllPlayers());
+                    synchronized (ssc) {
+                        ssc.dataOut.writeObject(NEW_RESOURCES_ADDED);
+                        ssc.dataOut.reset();
+                        ssc.dataOut.writeObject(GameBoard.getAllPlayers());
+                        ssc.dataOut.flush();
+                    }
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastNewResources() CSC" + e.getMessage());
+            }
+        }
+
+        public void broadcastGettingResources() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(GET_RESOURCES_ADDED);
+                    ssc.dataOut.writeInt(diceValue);
                     ssc.dataOut.flush();
                 }
             } catch (IOException e) {
-                System.out.println("IOException from broadcastNewResources() CSC");
+                System.out.println("IOException from broadcastGettingResources() CSC");
             }
         }
 
