@@ -192,6 +192,44 @@ public class GameServer {
                                 GameBoard.setTilesDict((HashMap<ArrayList<Integer>, Tile>) dataIn.readObject());
                                 broadcastRobberMoved();
                                 break;
+                            case PLAYER_ROBBED:
+                                boolean canBeRobbed = false;
+                                Random random = new Random();
+                                Player robbingPlayer = (Player) dataIn.readObject();
+                                Player robbedPlayer = (Player) dataIn.readObject();
+                                ResourceType[] resources = ResourceType.values();
+
+                                for (Integer resourceAmount : robbedPlayer.getPlayerResourcesDict().values()) {
+                                    if (resourceAmount > 0) {
+                                        canBeRobbed = true;
+                                        break;
+                                    }
+                                }
+
+                                System.out.println("Can be robbed");
+                                System.out.println(canBeRobbed);
+
+                                if (canBeRobbed) {
+                                    while (true) {
+                                        ResourceType randomResource = resources[random.nextInt(resources.length)];
+                                        HashMap<ResourceType, Integer> resourceChange = new HashMap<>();
+
+                                        if (robbedPlayer.getPlayerResourcesDict().get(randomResource) > 0) {
+                                            System.out.println(randomResource);
+                                            System.out.println(robbedPlayer.getPlayerResourcesDict().get(randomResource));
+                                            resourceChange.put(randomResource, -1);
+                                            robbedPlayer.updatePlayerResourcesDict(resourceChange);
+                                            resourceChange.put(randomResource, 1);
+                                            robbingPlayer.updatePlayerResourcesDict(resourceChange);
+                                            break;
+                                        }
+                                    }
+
+                                    GameBoard.updatePlayers(robbingPlayer);
+                                    GameBoard.updatePlayers(robbedPlayer);
+                                }
+                                broadcastPlayerRobbed();
+                                break;
                         }
                     }
                 }
@@ -400,7 +438,21 @@ public class GameServer {
                     ssc.dataOut.flush();
                 }
             } catch (IOException e) {
-                System.out.println("IOException from moveRobber() SSC");
+                System.out.println("IOException from broadcastRobberMoved() SSC");
+            }
+        }
+
+        public void broadcastPlayerRobbed() {
+            System.out.println("Yay");
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(PLAYER_ROB_ADDED);
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(GameBoard.getAllPlayers());
+                    ssc.dataOut.flush();
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastPlayerRobbed() SSC");
             }
         }
     }

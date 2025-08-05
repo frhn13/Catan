@@ -576,12 +576,13 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
                 if (robPlayer) {
                     outerLoop:
-                    for (PlayerColour playerToRob : playersToRob.keySet()) {
-                        if (mouseX >= playersToRob.get(playerToRob).getFirst() && mouseX <= playersToRob.get(playerToRob).getFirst() + 20
-                                && mouseY >= playersToRob.get(playerToRob).getLast() && mouseY <= playersToRob.get(playerToRob).getLast() + 20) {
-                            for (Player player : allPlayers) {
-                                if (player.getPlayerColour() == playerToRob) {
-                                    robbedPlayer = player;
+                    for (PlayerColour playerColourToRob : playersToRob.keySet()) {
+                        if (mouseX >= playersToRob.get(playerColourToRob).getFirst() && mouseX <= playersToRob.get(playerColourToRob).getFirst() + 20
+                                && mouseY >= playersToRob.get(playerColourToRob).getLast() && mouseY <= playersToRob.get(playerColourToRob).getLast() + 20) {
+                            for (Player playerToRob : allPlayers) {
+                                if (playerToRob.getPlayerColour() == playerColourToRob) {
+                                    robbedPlayer = playerToRob;
+                                    gameClient.playerRobbed();
 
                                     robPlayer = false;
                                     rollDiceButton.setVisible(false);
@@ -1215,6 +1216,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             csc.moveRobber();
         }
 
+        public void playerRobbed() {
+            csc.playerRobbed();
+        }
+
         public class ClientSideConnection {
             private Socket socket;
             private ObjectInputStream dataIn;
@@ -1395,6 +1400,17 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 }
             }
 
+            public void playerRobbed() {
+                try {
+                    dataOut.writeObject(PLAYER_ROBBED);
+                    dataOut.writeObject(player);
+                    dataOut.writeObject(robbedPlayer);
+                    dataOut.flush();
+                } catch (IOException e) {
+                    System.out.println("IOException occurred in playerRobbed() CSC");
+                }
+            }
+
             public void listenForServerUpdates() {
                 new Thread(() -> {
                     try {
@@ -1526,6 +1542,16 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         break;
                                     case ROBBER_MOVE_ADDED:
                                         tilesDict = (HashMap<ArrayList<Integer>, Tile>) dataIn.readObject();
+                                        break;
+                                    case PLAYER_ROB_ADDED:
+                                        allPlayers = (ArrayList<Player>) dataIn.readObject();
+                                        for (Player p : allPlayers) {
+                                            if (p.getPlayerColour() == player.getPlayerColour()) {
+                                                player = p;
+                                                break;
+                                            }
+                                        }
+                                        displayUserStats();
                                         break;
                                 }
                                 repaint();
