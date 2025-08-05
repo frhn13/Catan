@@ -18,6 +18,9 @@ public class GameServer {
     private int numPlayers;
     private int diceValue;
     private ArrayList<Player> allPlayers = new ArrayList<>();
+    private ArrayList<Player> discardingPlayers = new ArrayList<>();
+    private int noPlayersWhoHaveDiscarded = 0;
+    private int noPlayersMustDiscard = 0;
     private HashSet<Integer> resetList = new HashSet<>();
     private ServerSideConnection player1;
     private ServerSideConnection player2;
@@ -229,6 +232,33 @@ public class GameServer {
                                     GameBoard.updatePlayers(robbedPlayer);
                                 }
                                 broadcastPlayerRobbed();
+                                break;
+                            case SEVEN_ROLLED:
+                                allPlayers = (ArrayList<Player>) dataIn.readObject();
+                                discardingPlayers = new ArrayList<>();
+                                for (Player p : allPlayers) {
+                                    int totalCards = 0;
+                                    for (Integer resourceAmount : p.getPlayerResourcesDict().values())
+                                        totalCards += resourceAmount;
+
+                                    if (totalCards >= 8)
+                                        discardingPlayers.add(p);
+                                }
+
+                                noPlayersMustDiscard = discardingPlayers.size();
+                                if (discardingPlayers.isEmpty())
+                                    broadcastSevenRolled();
+                                else
+                                    broadcastDiscardCards();
+                                break;
+                            case CARDS_DISCARDED:
+                                GameBoard.updatePlayers((Player) dataIn.readObject());
+                                noPlayersWhoHaveDiscarded++;
+                                if (noPlayersWhoHaveDiscarded >= noPlayersMustDiscard) {
+                                    noPlayersMustDiscard = 0;
+                                    noPlayersWhoHaveDiscarded = 0;
+                                    broadcastDiscardsFinished();
+                                }
                                 break;
                         }
                     }
@@ -443,7 +473,6 @@ public class GameServer {
         }
 
         public void broadcastPlayerRobbed() {
-            System.out.println("Yay");
             try {
                 for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
                     ssc.dataOut.writeObject(PLAYER_ROB_ADDED);
@@ -453,6 +482,45 @@ public class GameServer {
                 }
             } catch (IOException e) {
                 System.out.println("IOException from broadcastPlayerRobbed() SSC");
+            }
+        }
+
+        public void broadcastSevenRolled() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(SEVEN_ROLLED_ADDED);
+                    ssc.dataOut.flush();
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastSevenRolled() CSC");
+            }
+        }
+
+        public void broadcastDiscardCards() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(CARDS_TO_DISCARD_ADDED);
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(GameState.DISCARD_CARDS);
+                    ssc.dataOut.writeObject(discardingPlayers);
+                    ssc.dataOut.flush();
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastDiscardCards() CSC");
+            }
+        }
+
+        public void broadcastDiscardsFinished() {
+            try {
+                for (ServerSideConnection ssc : List.of(player1, player2, player3, player4)) {
+                    ssc.dataOut.writeObject(CARDS_DISCARDED_ADDED);
+                    ssc.dataOut.reset();
+                    ssc.dataOut.writeObject(GameState.NORMAL_PLAY);
+                    ssc.dataOut.writeObject(allPlayers);
+                    ssc.dataOut.flush();
+                }
+            } catch (IOException e) {
+                System.out.println("IOException from broadcastDiscardsFinished() CSC");
             }
         }
     }
