@@ -4,7 +4,7 @@ import java.awt.*;
 
 public class Constants {
     public static final int DEFAULT_GAME_WIDTH = 1200;
-    public static final int DEFAULT_GAME_HEIGHT = 1200;
+    public static final int DEFAULT_GAME_HEIGHT = 1000;
     public static final int TILE_WIDTH = 100;
     public static final int TILE_HEIGHT = 100;
     public static final int CARD_WIDTH = 50;
