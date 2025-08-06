@@ -209,12 +209,12 @@ public class GameServer {
                                     }
                                 }
 
-                                System.out.println("Can be robbed");
-                                System.out.println(canBeRobbed);
-
                                 if (canBeRobbed) {
+                                    ResourceType randomResource;
                                     while (true) {
-                                        ResourceType randomResource = resources[random.nextInt(resources.length)];
+                                        do {
+                                            randomResource = resources[random.nextInt(resources.length)];
+                                        } while (randomResource == ResourceType.DESERT);
                                         HashMap<ResourceType, Integer> resourceChange = new HashMap<>();
 
                                         if (robbedPlayer.getPlayerResourcesDict().get(randomResource) > 0) {
@@ -234,9 +234,10 @@ public class GameServer {
                                 broadcastPlayerRobbed();
                                 break;
                             case SEVEN_ROLLED:
-                                allPlayers = (ArrayList<Player>) dataIn.readObject();
+                                GameBoard.setAllPlayers((ArrayList<Player>) dataIn.readObject());
+                                allPlayers = GameBoard.getAllPlayers();
                                 discardingPlayers = new ArrayList<>();
-                                for (Player p : allPlayers) {
+                                for (Player p : GameBoard.getAllPlayers()) {
                                     int totalCards = 0;
                                     for (Integer resourceAmount : p.getPlayerResourcesDict().values())
                                         totalCards += resourceAmount;
@@ -516,7 +517,7 @@ public class GameServer {
                     ssc.dataOut.writeObject(CARDS_DISCARDED_ADDED);
                     ssc.dataOut.reset();
                     ssc.dataOut.writeObject(GameState.NORMAL_PLAY);
-                    ssc.dataOut.writeObject(allPlayers);
+                    ssc.dataOut.writeObject(GameBoard.getAllPlayers());
                     ssc.dataOut.flush();
                 }
             } catch (IOException e) {

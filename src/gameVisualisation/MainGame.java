@@ -31,6 +31,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
     JLabel thisPlayerScoreLabel = new JLabel();
     JLabel thisPlayerLabel;
+    JLabel thisPlayerCardsLabel = new JLabel();
     JLabel player1Label = new JLabel();
     JLabel player2Label = new JLabel();
     JLabel player3Label = new JLabel();
@@ -38,6 +39,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     JLabel player2cardsLabel = new JLabel();
     JLabel player3cardsLabel = new JLabel();
     JLabel currentPlayerLabel = new JLabel();
+    JLabel moveRobberLabel = new JLabel();
 
     JButton bankTradeButton;
     JButton playerTradeButton;
@@ -88,7 +90,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
     HashMap<ArrayList<Integer>, ResourceType> givingTradeCoordinates = new HashMap<>();
     HashMap<ArrayList<Integer>, ResourceType> takingTradeCoordinates = new HashMap<>();
     HashMap<ResourceType, Integer> discardedCards = new HashMap<>();
-    HashMap<ArrayList<Integer>, ResourceType> playerResourcesCoordinates = new HashMap<>();
+    HashMap<ArrayList<Integer>, ResourceType> playerDiscardResourcesCoordinates = new HashMap<>();
 
     GameState gameState = GameState.INITIAL_PLACEMENT;
 
@@ -228,7 +230,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                         g.setFont(RESOURCE_AMOUNT_FONT);
                         g.setColor(Color.black);
                         g.drawString(String.valueOf(player.getPlayerResourcesDict().get(resource)), card_num * 100 + 70, DEFAULT_GAME_HEIGHT - 90);
-                        playerResourcesCoordinates.put(new ArrayList<>(Arrays.asList(card_num * 100 + 50, DEFAULT_GAME_HEIGHT - 130)), resource);
                         card_num++;
                     }
                 }
@@ -317,12 +318,15 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 if (discardCards) {
                     for (ResourceType resourceType : discardedCards.keySet()) {
                         Image cardImg = new ImageIcon(Objects.requireNonNull(getClass().getResource("/Images/gameCards/" + resourceType.cardImage))).getImage();
-                        g.drawImage(cardImg, DEFAULT_GAME_WIDTH - card_num * 60 - 100, DEFAULT_GAME_HEIGHT - 700, CARD_WIDTH, CARD_HEIGHT, null);
+                        g.drawImage(cardImg, DEFAULT_GAME_WIDTH - card_num * 60 - 100, DEFAULT_GAME_HEIGHT - 600, CARD_WIDTH, CARD_HEIGHT, null);
                         g.setFont(RESOURCE_AMOUNT_FONT);
                         g.setColor(Color.black);
-                        g.drawString(String.valueOf(discardedCards.get(resourceType)), DEFAULT_GAME_WIDTH - card_num * 60 - 100, DEFAULT_GAME_HEIGHT - 660);
+                        g.drawString(String.valueOf(discardedCards.get(resourceType)), DEFAULT_GAME_WIDTH - card_num * 60 - 80, DEFAULT_GAME_HEIGHT - 560);
+                        playerDiscardResourcesCoordinates.put(new ArrayList<>(Arrays.asList(DEFAULT_GAME_WIDTH - card_num * 60 - 100, DEFAULT_GAME_HEIGHT - 600)), resourceType);
                         card_num++;
                     }
+                    Image redArrowImg = new ImageIcon(Objects.requireNonNull(getClass().getResource("/Images/trade/red_arrow.png"))).getImage();
+                    g.drawImage(redArrowImg, DEFAULT_GAME_WIDTH - card_num * 60 - 100, DEFAULT_GAME_HEIGHT - 600, CARD_WIDTH, CARD_HEIGHT, null);
                 }
             }
         };
@@ -586,7 +590,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                 upgradeSettlementButton.setVisible(true);
                                 tradeButton.setVisible(true);
                                 endTurnButton.setVisible(true);
+                                moveRobberLabel.setText("");
                             }
+                            else
+                                moveRobberLabel.setText("Rob Player");
                             break;
                         }
                     }
@@ -609,6 +616,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                     upgradeSettlementButton.setVisible(true);
                                     tradeButton.setVisible(true);
                                     endTurnButton.setVisible(true);
+                                    moveRobberLabel.setText("");
                                     break outerLoop;
                                 }
                             }
@@ -617,10 +625,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                 }
 
                 if (discardCards) {
-                    for (ArrayList<Integer> coordinates : playerResourcesCoordinates.keySet()) {
+                    for (ArrayList<Integer> coordinates : playerDiscardResourcesCoordinates.keySet()) {
                         if (mouseX >= coordinates.getFirst() && mouseX <= coordinates.getFirst() + CARD_WIDTH &&
                         mouseY >= coordinates.getLast() && mouseY <= coordinates.getLast() + CARD_HEIGHT) {
-                            ResourceType resource = playerResourcesCoordinates.get(coordinates);
+                            ResourceType resource = playerDiscardResourcesCoordinates.get(coordinates);
                             if (e.getButton() == MouseEvent.BUTTON1)
                                 discardedCards.put(resource, discardedCards.get(resource) + 1);
                             else if (e.getButton() == MouseEvent.BUTTON3 && discardedCards.get(resource) > 0)
@@ -722,13 +730,19 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
         thisPlayerScoreLabel = new JLabel() {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(50, DEFAULT_GAME_HEIGHT - 300, 300, 100);
+                super.setBounds(50, DEFAULT_GAME_HEIGHT - 350, 300, 100);
             }
         };
 
         thisPlayerLabel = new JLabel() {
             public void setBounds(int x, int y, int width, int height) {
-                super.setBounds(50, DEFAULT_GAME_HEIGHT - 350, 400, 100);
+                super.setBounds(50, DEFAULT_GAME_HEIGHT - 400, 400, 100);
+            }
+        };
+
+        thisPlayerCardsLabel = new JLabel() {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(50, DEFAULT_GAME_HEIGHT - 300, 400, 100);
             }
         };
 
@@ -774,6 +788,12 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
         };
 
+        moveRobberLabel = new JLabel() {
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(DEFAULT_GAME_WIDTH - 250, DEFAULT_GAME_HEIGHT - 300, GAME_BUTTON_WIDTH, GAME_BUTTON_HEIGHT);
+            }
+        };
+
         if (gameState == GameState.INITIAL_PLACEMENT || gameState == GameState.LOBBY) {
             resetTrading();
             buildSettlementButton.setVisible(false);
@@ -791,6 +811,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             diceRollLabel.setFont(DICE_ROLL_FONT);
             thisPlayerScoreLabel.setFont(SCORE_FONT);
             thisPlayerLabel.setFont(SCORE_FONT);
+            thisPlayerCardsLabel.setFont(SCORE_FONT);
             currentPlayerLabel.setFont(SCORE_FONT);
             player1Label.setFont(OTHER_SCORE_FONT);
             player2Label.setFont(OTHER_SCORE_FONT);
@@ -798,6 +819,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             player1cardsLabel.setFont(OTHER_SCORE_FONT);
             player2cardsLabel.setFont(OTHER_SCORE_FONT);
             player3cardsLabel.setFont(OTHER_SCORE_FONT);
+            moveRobberLabel.setFont(SCORE_FONT);
             if (currentPlayerTurn == player.getPlayerNumber()) {
                 buildSettlementButton.setVisible(true);
             }
@@ -1013,17 +1035,23 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             public void actionPerformed(ActionEvent e) {
                 int totalCards = 0;
                 double totalToDiscard = 0;
-                for (Integer noResources : player.getPlayerResourcesDict().values()) {
-                    totalCards += noResources;
-                }
-                for (Integer noResources : discardedCards.values()) {
-                    totalToDiscard += noResources;
+                boolean discardValid = true;
+
+                for (ResourceType resource : player.getPlayerResourcesDict().keySet()) {
+                    totalCards += player.getPlayerResourcesDict().get(resource);
+                    totalToDiscard += discardedCards.get(resource);
+                    if (player.getPlayerResourcesDict().get(resource) < discardedCards.get(resource)) discardValid = false;
                 }
 
                 System.out.println(totalCards);
                 System.out.println(totalToDiscard);
 
-                if (totalCards / totalToDiscard == 2 || (totalCards + 1) / totalToDiscard == 2) {
+                if ((totalCards / totalToDiscard == 2 || (totalCards - 1) / totalToDiscard == 2) && discardValid) {
+                    for (ResourceType resourceType : discardedCards.keySet())
+                        discardedCards.replace(resourceType, discardedCards.get(resourceType) * -1);
+
+                    player.updatePlayerResourcesDict(discardedCards);
+                    System.out.println(player.getPlayerResourcesDict());
                     discardCards = false;
                     discardCardsButton.setVisible(false);
                     resetTrading();
@@ -1046,6 +1074,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         gamePanel.add(diceRollLabel);
         gamePanel.add(thisPlayerScoreLabel);
         gamePanel.add(thisPlayerLabel);
+        gamePanel.add(thisPlayerCardsLabel);
         gamePanel.add(currentPlayerLabel);
         gamePanel.add(player1Label);
         gamePanel.add(player2Label);
@@ -1053,6 +1082,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         gamePanel.add(player1cardsLabel);
         gamePanel.add(player2cardsLabel);
         gamePanel.add(player3cardsLabel);
+        gamePanel.add(moveRobberLabel);
 
         this.setSize(DEFAULT_GAME_WIDTH, DEFAULT_GAME_HEIGHT);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -1148,6 +1178,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         diceRollLabel.setText("");
         thisPlayerScoreLabel.setText("");
         thisPlayerLabel.setText("");
+        thisPlayerCardsLabel.setText("");
         currentPlayerLabel.setText("");
         player1Label.setText("");
         player2Label.setText("");
@@ -1155,6 +1186,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
         player1cardsLabel.setText("");
         player2cardsLabel.setText("");
         player3cardsLabel.setText("");
+        moveRobberLabel.setText("");
 
         this.add(endgamePanel);
         this.remove(gamePanel);
@@ -1475,10 +1507,6 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             }
 
             public void moveRobber() {
-                for (Tile tile : tilesDict.values()) {
-                    System.out.println(tile.getTileCoordinates());
-                    System.out.println(tile.isTileBlocked());
-                }
                 try {
                     dataOut.writeObject(ROBBER_MOVED);
                     dataOut.writeObject(tilesDict);
@@ -1491,6 +1519,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             public void playerRobbed() {
                 try {
                     dataOut.writeObject(PLAYER_ROBBED);
+                    dataOut.reset();
                     dataOut.writeObject(player);
                     dataOut.writeObject(robbedPlayer);
                     dataOut.flush();
@@ -1502,6 +1531,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             public void cardsDiscarded() {
                 try {
                     dataOut.writeObject(CARDS_DISCARDED);
+                    dataOut.reset();
                     dataOut.writeObject(player);
                     dataOut.flush();
                 } catch (IOException e) {
@@ -1652,8 +1682,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                         displayUserStats();
                                         break;
                                     case SEVEN_ROLLED_ADDED:
-                                        if (player.getPlayerNumber() == currentPlayerTurn)
+                                        if (player.getPlayerNumber() == currentPlayerTurn) {
                                             moveRobber = true;
+                                            moveRobberLabel.setText("Move Robber");
+                                        }
                                         break;
                                     case CARDS_TO_DISCARD_ADDED:
                                         gameState = (GameState) dataIn.readObject();
@@ -1668,8 +1700,10 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                                     case CARDS_DISCARDED_ADDED:
                                         gameState = (GameState) dataIn.readObject();
                                         allPlayers = (ArrayList<Player>) dataIn.readObject();
-                                        if (currentPlayerTurn == player.getPlayerNumber())
+                                        if (currentPlayerTurn == player.getPlayerNumber()) {
                                             moveRobber = true;
+                                            moveRobberLabel.setText("Move Robber");
+                                        }
                                         displayUserStats();
                                         break;
                                 }
@@ -1691,6 +1725,11 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
                     if (player.getPlayerNumber() == currentPlayer.getPlayerNumber()) {
                         thisPlayerScoreLabel.setText("Your Score: " + currentPlayer.getScore());
                         thisPlayerLabel.setText("Your Colour: " + currentPlayer.getPlayerColour());
+                        int totalCards = 0;
+                        for (Integer noResources : player.getPlayerResourcesDict().values()) {
+                            totalCards += noResources;
+                        }
+                        thisPlayerCardsLabel.setText("Your No. of Cards: " + totalCards);
                     }
                     else {
                         int totalCards = 0;
