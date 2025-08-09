@@ -20,6 +20,7 @@ import static Constants.Constants.*;
 
 
 public class MainGame extends JFrame implements ActionListener, MouseListener {
+    String ip_address;
     JPanel gamePanel;
     JButton rollDiceButton;
     JButton buildRoadButton;
@@ -94,7 +95,8 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
 
     GameState gameState = GameState.INITIAL_PLACEMENT;
 
-    public MainGame() {
+    public MainGame(String inserted_ip) {
+        ip_address = inserted_ip;
         gameClient.connectToServer();
 
         System.out.println("Connected to server as Player #"+player.getPlayerNumber()+" with colour "+player.getPlayerColour()+".");
@@ -1336,7 +1338,7 @@ public class MainGame extends JFrame implements ActionListener, MouseListener {
             public ClientSideConnection() {
                 System.out.println("---Client---");
                 try {
-                    socket = new Socket("25.47.99.90", 44444);
+                    socket = new Socket(ip_address, 44444);
                     dataOut = new ObjectOutputStream(socket.getOutputStream());
                     dataOut.flush();
                     dataIn = new ObjectInputStream(socket.getInputStream());

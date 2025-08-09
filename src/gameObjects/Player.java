@@ -25,11 +25,11 @@ public class Player implements Serializable {
         this.playerResourcesDict = new HashMap<>();
         this.initialPlacements = 0;
 
-        this.playerResourcesDict.put(ResourceType.WOOL, 20);
-        this.playerResourcesDict.put(ResourceType.GRAIN, 20);
-        this.playerResourcesDict.put(ResourceType.ORE, 20);
-        this.playerResourcesDict.put(ResourceType.LUMBER, 20);
-        this.playerResourcesDict.put(ResourceType.BRICK, 20);
+        this.playerResourcesDict.put(ResourceType.WOOL, 0);
+        this.playerResourcesDict.put(ResourceType.GRAIN, 0);
+        this.playerResourcesDict.put(ResourceType.ORE, 0);
+        this.playerResourcesDict.put(ResourceType.LUMBER, 0);
+        this.playerResourcesDict.put(ResourceType.BRICK, 0);
     }
 
     public PlayerColour getPlayerColour() {
